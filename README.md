@@ -124,6 +124,29 @@ Organizations can dynamically update risk tolerance without restarting applicati
 | `POST` | `/predict-batch-csv` | **Protected** | 10/min | Multipart CSV Batch Inference + Summary |
 | `GET` | `/api/sample-csv` | Public | None | Generate randomized synthetic CSV batch from DB |
 | `GET` | `/api/sample-json` | Public | None | Sample randomized JSON transactions from DB |
+| `GET` | `/api/model-analytics` | Public | None | Telemetry benchmarks, confusion matrix & PR curve points |
+| `POST` | `/api/retrain` | Optional | None | Trigger Optuna Bayesian hyperparameter search in background |
+| `GET` | `/api/retrain/status` | Public | None | Check real-time retraining progress and status |
+
+---
+
+## 🐳 Running with Docker (Production Containerization)
+
+SentinelRisk includes a hardened, multi-stage `Dockerfile` and `docker-compose.yml` configured with non-root security (`appuser`), persistent audit log volumes, live model hot-reloading, and automated healthchecks.
+
+### Quick Start with Docker Compose
+```bash
+# Build and launch in detached mode
+docker compose up --build -d
+
+# Verify container health and logs
+docker compose ps
+docker compose logs -f
+
+# Stop container
+docker compose down
+```
+Access the interactive console at [http://localhost:8000](http://localhost:8000).
 
 ---
 

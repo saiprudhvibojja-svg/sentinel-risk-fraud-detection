@@ -101,13 +101,16 @@
 
       <!-- Header Status Indicators -->
       <div class="flex flex-wrap items-center gap-2.5">
-        <!-- Auth Protection Badge -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400">
+        <!-- Auth Protection Badge & Key Configuration -->
+        <button type="button" onclick="openApiKeyModal()" title="Click to view or customize runtime Sentinel API Key" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 text-xs font-semibold text-emerald-400 transition-all cursor-pointer">
           <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
           </svg>
-          <span>Auth: Protected (API Key)</span>
-        </div>
+          <span id="authBadgeText">Auth: Active (Dev Key)</span>
+          <svg class="w-3 h-3 text-emerald-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
 
         <!-- Live API Badge -->
         <div id="statusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs font-medium">
@@ -888,9 +891,95 @@
     </div>
   </div>
 
+  <!-- API KEY CONFIGURATION MODAL -->
+  <div id="apiKeyModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-700 space-y-4 animate-fade-in">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Sentinel API Key Configuration</h3>
+            <p class="text-[11px] text-slate-400">Manage runtime authorization header credentials</p>
+          </div>
+        </div>
+        <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Active Client API Key</label>
+          <input type="password" id="customApiKeyInput" placeholder="Enter custom production API key or leave blank for default" class="glass-input w-full px-3 py-2 rounded-xl text-xs font-mono text-white">
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+          <div class="flex items-center justify-between">
+            <span>Default Dev Fallback:</span>
+            <code class="text-emerald-400 font-mono text-[10px]">sentinel-dev-secret-key-2026</code>
+          </div>
+          <p class="text-[10px] text-slate-500">Custom keys are persisted locally in browser localStorage, allowing seamless demo simulations and private production connectivity without leaking secrets.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="resetDefaultApiKey()" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 transition-all">Reset to Dev Key</button>
+        <button onclick="saveCustomApiKey()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-500/20 transition-all">Save Key</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // --- Global State ---
-    const API_KEY = 'sentinel-dev-secret-key-2026';
+    // --- Global State & Key Decoupling ---
+    const DEFAULT_API_KEY = 'sentinel-dev-secret-key-2026';
+
+    function getApiKey() {
+      return localStorage.getItem('sentinel_custom_api_key') || DEFAULT_API_KEY;
+    }
+
+    function updateApiKeyUi() {
+      const activeKey = getApiKey();
+      const isCustom = localStorage.getItem('sentinel_custom_api_key') !== null;
+      const label = document.getElementById('authBadgeText');
+      if (label) {
+        label.textContent = isCustom ? 'Auth: Custom Key' : 'Auth: Dev Key';
+      }
+      const input = document.getElementById('customApiKeyInput');
+      if (input) {
+        input.value = isCustom ? activeKey : '';
+      }
+    }
+
+    function openApiKeyModal() {
+      updateApiKeyUi();
+      document.getElementById('apiKeyModal').classList.remove('hidden');
+    }
+
+    function closeApiKeyModal() {
+      document.getElementById('apiKeyModal').classList.add('hidden');
+    }
+
+    function saveCustomApiKey() {
+      const input = document.getElementById('customApiKeyInput');
+      const val = input.value.trim();
+      if (val) {
+        localStorage.setItem('sentinel_custom_api_key', val);
+      } else {
+        localStorage.removeItem('sentinel_custom_api_key');
+      }
+      updateApiKeyUi();
+      closeApiKeyModal();
+      checkHealth();
+    }
+
+    function resetDefaultApiKey() {
+      localStorage.removeItem('sentinel_custom_api_key');
+      updateApiKeyUi();
+      closeApiKeyModal();
+      checkHealth();
+    }
+
     let riskGaugeChart = null;
     let shapBarChart = null;
     let analyticsPrChart = null;
@@ -945,6 +1034,7 @@
 
     // --- Init UI ---
     window.addEventListener('DOMContentLoaded', () => {
+      updateApiKeyUi();
       initPcaInputs();
       initGaugeChart();
       initShapBarChart();
@@ -1094,7 +1184,7 @@
     async function fetchPolicy() {
       try {
         const res = await fetch('/policy', {
-          headers: { 'X-API-Key': API_KEY }
+          headers: { 'X-API-Key': getApiKey() }
         });
         const data = await res.json();
         applyPolicyUi(data.active_policy, data.current_threshold);
@@ -1109,7 +1199,7 @@
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': API_KEY
+            'X-API-Key': getApiKey()
           },
           body: JSON.stringify({ policy_mode: mode })
         });
@@ -1243,7 +1333,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': API_KEY
+            'X-API-Key': getApiKey()
           },
           body: JSON.stringify(payload)
         });
@@ -1401,7 +1491,7 @@
         const res = await fetch('/predict-batch-csv', {
           method: 'POST',
           headers: {
-            'X-API-Key': API_KEY
+            'X-API-Key': getApiKey()
           },
           body: formData
         });
@@ -1442,7 +1532,7 @@
 
       try {
         const sampleRes = await fetch(`/api/sample-json?total_rows=${total}&fraud_count=${fraud}`, {
-          headers: { 'X-API-Key': API_KEY }
+          headers: { 'X-API-Key': getApiKey() }
         });
         if (!sampleRes.ok) throw new Error(`HTTP ${sampleRes.status} sampling failed`);
         const sampleData = await sampleRes.json();
@@ -1451,7 +1541,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': API_KEY
+            'X-API-Key': getApiKey()
           },
           body: JSON.stringify(sampleData)
         });
@@ -1661,7 +1751,7 @@
     async function fetchModelAnalytics() {
       try {
         const res = await fetch('/api/model-analytics', {
-          headers: { 'X-API-Key': API_KEY }
+          headers: { 'X-API-Key': getApiKey() }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -1822,7 +1912,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': API_KEY
+            'X-API-Key': getApiKey()
           },
           body: JSON.stringify({ n_trials: trials, timeout: timeout })
         });

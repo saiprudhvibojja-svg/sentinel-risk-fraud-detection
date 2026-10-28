@@ -48,25 +48,46 @@ def fetch_samples(conn: sqlite3.Connection, legit_count: int, fraud_count: int) 
     return shuffled.rename(columns=HEADER_RENAME)
 
 
-def generate_all_batches():
-    if not DB_PATH.exists():
-        raise FileNotFoundError(f"Database not found at {DB_PATH}")
+def generate_synthetic_samples(legit_count: int, fraud_count: int) -> pd.DataFrame:
+    rows = []
+    for _ in range(legit_count):
+        row = {"Time": round(random.uniform(100.0, 150000.0), 1), "Amount": round(random.uniform(5.0, 250.0), 2)}
+        for i in range(1, 29):
+            row[f"V{i}"] = round(random.gauss(0.0, 0.4), 4)
+        rows.append(row)
 
+    for _ in range(fraud_count):
+        row = {"Time": round(random.uniform(100.0, 150000.0), 1), "Amount": round(random.uniform(0.0, 800.0), 2)}
+        for i in range(1, 29):
+            row[f"V{i}"] = round(random.gauss(0.0, 1.2), 4)
+        row["V4"] = round(random.uniform(2.5, 4.5), 4)
+        row["V14"] = round(random.uniform(-4.5, -2.5), 4)
+        row["V17"] = round(random.uniform(-3.5, -1.5), 4)
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    return df.sample(frac=1.0).reset_index(drop=True)
+
+
+def generate_all_batches():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    use_db = DB_PATH.exists()
+    conn = sqlite3.connect(DB_PATH) if use_db else None
 
     print("=" * 60)
-    print("Generating Offline Test Batches from SQLite (data/creditcard.db)")
+    source_msg = "SQLite (data/creditcard.db)" if use_db else "Synthetic Zero-Config Generator"
+    print(f"Generating Offline Test Batches from {source_msg}")
     print("=" * 60)
 
     generated_files = []
+    sampler = (lambda l, f: fetch_samples(conn, legit_count=l, fraud_count=f)) if use_db else generate_synthetic_samples
 
     # 1. Normal Day Batches: 50 records each (0 to 1 fraud cases)
     print("\n--- Generating 5x Normal Day Batches (50 rows) ---")
     for i in range(1, 6):
         fraud_cnt = random.choice([0, 1])
         legit_cnt = 50 - fraud_cnt
-        df = fetch_samples(conn, legit_count=legit_cnt, fraud_count=fraud_cnt)
+        df = sampler(legit_cnt, fraud_cnt)
         file_path = OUTPUT_DIR / f"normal_day_batch_{i}.csv"
         df.to_csv(file_path, index=False)
         generated_files.append((file_path.name, len(df), fraud_cnt))
@@ -77,7 +98,7 @@ def generate_all_batches():
     for i in range(1, 6):
         fraud_cnt = random.randint(5, 12)
         legit_cnt = 60 - fraud_cnt
-        df = fetch_samples(conn, legit_count=legit_cnt, fraud_count=fraud_cnt)
+        df = sampler(legit_cnt, fraud_cnt)
         file_path = OUTPUT_DIR / f"attack_wave_batch_{i}.csv"
         df.to_csv(file_path, index=False)
         generated_files.append((file_path.name, len(df), fraud_cnt))
@@ -88,13 +109,14 @@ def generate_all_batches():
     for i in range(1, 6):
         fraud_cnt = random.randint(5, 20)
         legit_cnt = 200 - fraud_cnt
-        df = fetch_samples(conn, legit_count=legit_cnt, fraud_count=fraud_cnt)
+        df = sampler(legit_cnt, fraud_cnt)
         file_path = OUTPUT_DIR / f"enterprise_audit_batch_{i}.csv"
         df.to_csv(file_path, index=False)
         generated_files.append((file_path.name, len(df), fraud_cnt))
         print(f"Created {file_path.name}: {len(df)} records ({fraud_cnt} fraud, {legit_cnt} legit)")
 
-    conn.close()
+    if conn:
+        conn.close()
 
     print("\n" + "=" * 60)
     print(f"Successfully generated {len(generated_files)} batch files in {OUTPUT_DIR}")

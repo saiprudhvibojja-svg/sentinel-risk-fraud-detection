@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  sentinel-risk-api:
+    container_name: sentinel-risk-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - SENTINEL_API_KEY=${SENTINEL_API_KEY:-sentinel-dev-secret-key-2026}
+      - ENVIRONMENT=production
+    restart: unless-stopped
