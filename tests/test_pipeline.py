@@ -637,6 +637,34 @@ def test_retrain_cloud_dataset_omission(client, monkeypatch):
     assert "Cloud environment detected" in res.json().get("detail", "")
 
 
+def test_dynamic_sample_cloud_synthetic_fallback(client, monkeypatch):
+    from pathlib import Path
+    # Simulate cloud deployment where creditcard.db is absent
+    orig_exists = Path.exists
+    def mock_no_db(self):
+        if "creditcard.db" in str(self) or "creditcard.csv" in str(self):
+            return False
+        return orig_exists(self)
+
+    monkeypatch.setattr(Path, "exists", mock_no_db)
+
+    # 1. Test sample-json returns 200 with valid synthetic transactions
+    res_json = client.get("/api/sample-json?total_rows=15&fraud_count=2")
+    assert res_json.status_code == 200
+    data = res_json.json()
+    assert len(data) == 15
+    assert "time_elapsed" in data[0]
+    assert "v14" in data[0]
+
+    # 2. Test sample-csv returns 200 with CSV headers and rows
+    res_csv = client.get("/api/sample-csv?total_rows=10&fraud_count=1")
+    assert res_csv.status_code == 200
+    assert "text/csv" in res_csv.headers.get("content-type", "")
+    lines = [l.strip() for l in res_csv.text.strip().split("\n") if l.strip()]
+    assert len(lines) == 11  # 1 header + 10 data rows
+
+
+
 
 
 

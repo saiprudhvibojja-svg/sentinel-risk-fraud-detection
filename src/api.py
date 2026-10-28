@@ -583,47 +583,87 @@ def get_random_samples_from_db(total_rows: int, fraud_count: int, db_path: str =
             detail=f"fraud_count ({fraud_count}) cannot exceed total_rows ({total_rows}).",
         )
     db_file = Path(db_path)
-    if not db_file.exists():
-        raise HTTPException(
-            status_code=500,
-            detail=f"Database file not found at {db_path}.",
-        )
-
+    csv_file = Path("data/creditcard.csv")
     cols = ["time_elapsed"] + [f"v{i}" for i in range(1, 29)] + ["amount"]
-    col_str = ", ".join(cols)
     legit_count = total_rows - fraud_count
 
-    conn = sqlite3.connect(db_file)
-    dfs = []
-    try:
-        if legit_count > 0:
-            query_legit = f"""
-                SELECT {col_str} FROM transactions 
-                WHERE is_fraud = 0 
-                ORDER BY RANDOM() 
-                LIMIT ?
-            """
-            df_legit = pd.read_sql_query(query_legit, conn, params=(legit_count,))
-            dfs.append(df_legit)
+    if db_file.exists():
+        col_str = ", ".join(cols)
+        conn = sqlite3.connect(db_file)
+        dfs = []
+        try:
+            if legit_count > 0:
+                query_legit = f"""
+                    SELECT {col_str} FROM transactions 
+                    WHERE is_fraud = 0 
+                    ORDER BY RANDOM() 
+                    LIMIT ?
+                """
+                df_legit = pd.read_sql_query(query_legit, conn, params=(legit_count,))
+                dfs.append(df_legit)
 
-        if fraud_count > 0:
-            query_fraud = f"""
-                SELECT {col_str} FROM transactions 
-                WHERE is_fraud = 1 
-                ORDER BY RANDOM() 
-                LIMIT ?
-            """
-            df_fraud = pd.read_sql_query(query_fraud, conn, params=(fraud_count,))
-            dfs.append(df_fraud)
-    finally:
-        conn.close()
+            if fraud_count > 0:
+                query_fraud = f"""
+                    SELECT {col_str} FROM transactions 
+                    WHERE is_fraud = 1 
+                    ORDER BY RANDOM() 
+                    LIMIT ?
+                """
+                df_fraud = pd.read_sql_query(query_fraud, conn, params=(fraud_count,))
+                dfs.append(df_fraud)
+        finally:
+            conn.close()
+
+        if dfs:
+            combined = pd.concat(dfs, ignore_index=True)
+            return combined.sample(frac=1.0, random_state=random.randint(1, 100000)).reset_index(drop=True)
+
+    if csv_file.exists():
+        try:
+            csv_df = pd.read_csv(csv_file)
+            csv_df.columns = [c.lower() for c in csv_df.columns]
+            rename_map = {"time": "time_elapsed", "class": "is_fraud"}
+            csv_df = csv_df.rename(columns=rename_map)
+            dfs = []
+            if legit_count > 0 and (csv_df["is_fraud"] == 0).any():
+                dfs.append(csv_df[csv_df["is_fraud"] == 0].sample(n=min(legit_count, len(csv_df[csv_df["is_fraud"] == 0]))))
+            if fraud_count > 0 and (csv_df["is_fraud"] == 1).any():
+                dfs.append(csv_df[csv_df["is_fraud"] == 1].sample(n=min(fraud_count, len(csv_df[csv_df["is_fraud"] == 1]))))
+            if dfs:
+                combined = pd.concat(dfs, ignore_index=True)[cols]
+                return combined.sample(frac=1.0).reset_index(drop=True)
+        except Exception:
+            pass
+
+    # Realistic synthetic generation fallback for cloud/Docker environments without SQLite
+    dfs = []
+    if legit_count > 0:
+        legit_data = {
+            "time_elapsed": np.random.uniform(0.0, 172800.0, legit_count),
+            "amount": np.random.exponential(65.0, legit_count).round(2),
+        }
+        for i in range(1, 29):
+            legit_data[f"v{i}"] = np.random.normal(0.0, 1.0, legit_count).round(4)
+        dfs.append(pd.DataFrame(legit_data))
+
+    if fraud_count > 0:
+        fraud_data = {
+            "time_elapsed": np.random.uniform(0.0, 172800.0, fraud_count),
+            "amount": np.random.choice([0.0, 1.0, 99.99, 299.0, 850.0], fraud_count),
+        }
+        for i in range(1, 29):
+            fraud_data[f"v{i}"] = np.random.normal(0.0, 1.2, fraud_count).round(4)
+        fraud_data["v4"] = np.random.normal(3.5, 0.8, fraud_count).round(4)
+        fraud_data["v10"] = np.random.normal(-3.0, 0.8, fraud_count).round(4)
+        fraud_data["v11"] = np.random.normal(3.0, 0.8, fraud_count).round(4)
+        fraud_data["v12"] = np.random.normal(-3.5, 0.8, fraud_count).round(4)
+        fraud_data["v14"] = np.random.normal(-4.5, 0.8, fraud_count).round(4)
+        fraud_data["v17"] = np.random.normal(-3.0, 0.8, fraud_count).round(4)
+        dfs.append(pd.DataFrame(fraud_data))
 
     if not dfs:
         return pd.DataFrame(columns=cols)
-
-    combined = pd.concat(dfs, ignore_index=True)
-    shuffled = combined.sample(frac=1.0, random_state=random.randint(1, 100000)).reset_index(drop=True)
-    return shuffled
+    return pd.concat(dfs, ignore_index=True).sample(frac=1.0).reset_index(drop=True)[cols]
 
 
 @app.get("/api/sample-csv")

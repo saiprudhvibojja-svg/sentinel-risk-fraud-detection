@@ -479,8 +479,8 @@
               <span>Stage & Run Batch</span>
             </button>
 
-            <!-- Download Dynamic CSV Template -->
-            <button type="button" id="downloadCsvBtn" onclick="downloadDynamicSampleCsv()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center gap-2 transition-all">
+            <!-- Download CSV Template (Pure Client-side Generator) -->
+            <button type="button" id="btnDownloadTemplate" onclick="downloadCsvTemplate()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center gap-2 transition-all cursor-pointer">
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
               </svg>
@@ -1729,9 +1729,9 @@
 
         renderBatchResults(auditResult);
         const nameElem = document.getElementById('selectedFileName');
-        nameElem.textContent = `Loaded Dynamic SQL Batch: ${total} records (${fraud} confirmed frauds injected)`;
+        nameElem.textContent = `Loaded Dynamic Sample Batch: ${total} records (${fraud} confirmed frauds injected)`;
         nameElem.classList.remove('hidden');
-        document.getElementById('batchStatusMessage').textContent = `Audited ${total} dynamic SQL transactions from data/creditcard.db.`;
+        document.getElementById('batchStatusMessage').textContent = `Audited ${total} sample transactions (${fraud} fraud patterns evaluated).`;
       } catch (err) {
         alert(`Dynamic sample error: ${err.message}`);
       } finally {
@@ -1744,6 +1744,27 @@
         `;
         progressContainer.classList.add('hidden');
       }
+    }
+
+    function downloadCsvTemplate() {
+      const headers = ["Time", ...Array.from({length: 28}, (_, i) => `V${i+1}`), "Amount"];
+      // 2 sample rows (one typical legit transaction, one sample row)
+      const sampleRow1 = [0.0, ...Array(28).fill(0.0), 10.00];
+      const sampleRow2 = [10.0, -1.35, 1.12, -1.89, 2.51, ...Array(24).fill(0.0), 149.99];
+
+      const csvContent = [
+        headers.join(","),
+        sampleRow1.join(","),
+        sampleRow2.join(",")
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "sentinel_transaction_template.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     function downloadDynamicSampleCsv() {
