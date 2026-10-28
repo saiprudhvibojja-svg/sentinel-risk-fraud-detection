@@ -1,78 +1,78 @@
 {
     "study_name": "sentinel_xgboost_study",
     "best_trial_number": 1,
-    "best_pr_auc": 0.878055216431121,
+    "best_pr_auc": 0.8601341449204734,
     "best_params": {
-        "max_depth": 7,
-        "learning_rate": 0.11392135391540711,
-        "subsample": 0.605927535635965,
-        "colsample_bytree": 0.966877616508058,
-        "scale_pos_weight": 2.9993902278370133,
-        "n_estimators": 200
+        "max_depth": 6,
+        "learning_rate": 0.054481591222773226,
+        "subsample": 0.6298704374205267,
+        "colsample_bytree": 0.9150150294155581,
+        "scale_pos_weight": 4.01150224337812,
+        "n_estimators": 175
     },
     "n_trials": 5,
     "trials": [
         {
             "number": 0,
-            "value": 0.8778418277101142,
+            "value": 0.8256110276160706,
             "params": {
                 "max_depth": 6,
-                "learning_rate": 0.15205504268854655,
-                "subsample": 0.6820939247938078,
-                "colsample_bytree": 0.7785634778684948,
-                "scale_pos_weight": 5.442533309141051,
-                "n_estimators": 175
+                "learning_rate": 0.036934538327423834,
+                "subsample": 0.6237603230124646,
+                "colsample_bytree": 0.8556484448209287,
+                "scale_pos_weight": 9.390441059606117,
+                "n_estimators": 125
             },
             "state": "TrialState.COMPLETE"
         },
         {
             "number": 1,
-            "value": 0.878055216431121,
+            "value": 0.8601341449204734,
             "params": {
-                "max_depth": 7,
-                "learning_rate": 0.11392135391540711,
-                "subsample": 0.605927535635965,
-                "colsample_bytree": 0.966877616508058,
-                "scale_pos_weight": 2.9993902278370133,
-                "n_estimators": 200
+                "max_depth": 6,
+                "learning_rate": 0.054481591222773226,
+                "subsample": 0.6298704374205267,
+                "colsample_bytree": 0.9150150294155581,
+                "scale_pos_weight": 4.01150224337812,
+                "n_estimators": 175
             },
             "state": "TrialState.COMPLETE"
         },
         {
             "number": 2,
-            "value": 0.8042886347813808,
+            "value": 0.7653110668006451,
             "params": {
-                "max_depth": 5,
-                "learning_rate": 0.027911027433888576,
-                "subsample": 0.6598196083744918,
-                "colsample_bytree": 0.9391662367561019,
-                "scale_pos_weight": 9.008454302638334,
-                "n_estimators": 175
+                "max_depth": 7,
+                "learning_rate": 0.021324615761280887,
+                "subsample": 0.7904645428467094,
+                "colsample_bytree": 0.8151304901794318,
+                "scale_pos_weight": 7.275909114987295,
+                "n_estimators": 125
             },
             "state": "TrialState.COMPLETE"
         },
         {
             "number": 3,
-            "value": 0.8622763481112182,
+            "value": 0.8350376174117063,
             "params": {
                 "max_depth": 5,
-                "learning_rate": 0.13326696869553736,
-                "subsample": 0.6664390332212454,
-                "colsample_bytree": 0.7642617560919084,
-                "scale_pos_weight": 7.721461264791539,
-                "n_estimators": 175
+                "learning_rate": 0.05202368926948304,
+                "subsample": 0.798236248207355,
+                "colsample_bytree": 0.6556352156705373,
+                "scale_pos_weight": 5.119105495305607,
+                "n_estimators": 100
             },
             "state": "TrialState.COMPLETE"
         },
         {
             "number": 4,
-            "value": 0.851747753261344,
+            "value": 0.844013895833234,
             "params": {
-                "max_depth": 6,
-                "learning_rate": 0.07211740738110177,
-                "subsample": 0.8305884092714735,
-                "colsample_bytree": 0.6359562808487734,
-                "scale_pos_weight": 5.633676622673143,
+                "max_depth": 5,
+                "learning_rate": 0.06289558545431631,
+                "subsample": 0.9326398021532426,
+                "colsample_bytree": 0.8579597532086445,
+                "scale_pos_weight": 5.710379101204902,
                 "n_estimators": 100
             },
             "state": "TrialState.COMPLETE"
