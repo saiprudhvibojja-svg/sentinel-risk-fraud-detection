@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentinelRisk | Credit Card Fraud Detection & Explainable AI Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+            },
+            danger: {
+              500: '#ef4444',
+              600: '#dc2626',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .glass-input {
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
+    .glass-input:focus {
+      border-color: #3b82f6;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-blue-600 selection:text-white pb-12">
+
+  <!-- Background decorative glows -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10 max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    
+    <!-- HEADER -->
+    <header class="glass-panel rounded-2xl p-6 shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold tracking-tight text-white">SentinelRisk Console</h1>
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">v2.0 (XAI + Policy)</span>
+          </div>
+          <p class="text-sm text-slate-400">Explainable Fraud Detection & Dynamic Risk Policy Control</p>
+        </div>
+      </div>
+
+      <!-- Center Dynamic Policy Toolbar -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div class="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-inner">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2">Risk Policy:</span>
+          <button id="policyBtnStrict" onclick="setPolicyMode('STRICT')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-blue-600 text-white shadow-md shadow-blue-600/30">
+            Strict (0.97)
+          </button>
+          <button id="policyBtnBalanced" onclick="setPolicyMode('BALANCED')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800">
+            Balanced (0.85)
+          </button>
+          <button id="policyBtnAggressive" onclick="setPolicyMode('AGGRESSIVE')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800">
+            Aggressive (0.70)
+          </button>
+        </div>
+      </div>
+
+      <!-- Header Status Indicators -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Auth Protection Badge -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400">
+          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          <span>Auth: Protected (API Key)</span>
+        </div>
+
+        <!-- Live API Badge -->
+        <div id="statusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs font-medium">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" id="statusDot"></span>
+          <span id="statusText" class="text-slate-300">Checking API...</span>
+        </div>
+
+        <!-- Active Threshold Indicator -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs font-medium text-slate-300">
+          <span class="text-slate-400">Threshold:</span>
+          <span id="activeThresholdDisplay" class="font-mono text-emerald-400 font-semibold">0.9668</span>
+        </div>
+
+        <!-- Explainer Badge -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs font-medium text-purple-300">
+          <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span>SHAP TreeExplainer</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+      <button id="tabSimBtn" onclick="switchTab('simulator')" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Transaction Simulator & XAI
+      </button>
+      <button id="tabBatchBtn" onclick="switchTab('batch')" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Batch CSV Auditor
+      </button>
+    </div>
+
+    <!-- SECTION 1: SINGLE TRANSACTION SIMULATOR & EXPLAINER & TELEMETRY (3-COLUMN LAYOUT) -->
+    <div id="simulatorSection">
+      
+      <!-- 3-Column Responsive Grid: Input (4 cols) | Verdict & XAI (5 cols) | Telemetry & Lineage (3 cols) -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- COLUMN 1: Input Parameters & Presets (4 cols on lg) -->
+        <div class="lg:col-span-4 glass-panel rounded-2xl p-5 shadow-xl space-y-5">
+          <div class="border-b border-slate-800 pb-3">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+              </svg>
+              <span>Transaction Parameters</span>
+            </h2>
+            <p class="text-[11px] text-slate-400 mt-0.5">Select a preset or input custom telemetry.</p>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="space-y-2">
+            <label class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Quick-Fill Presets</label>
+            <div class="grid grid-cols-1 gap-2">
+              <button type="button" onclick="loadPreset('legit')" class="px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/30 text-left transition-all group flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-semibold text-emerald-400">Legitimate Retail</div>
+                  <div class="text-[10px] text-slate-400">$42.75 standard store payment</div>
+                </div>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>
+              </button>
+              <button type="button" onclick="loadPreset('card_test')" class="px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/30 text-left transition-all group flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-semibold text-amber-400">Card Testing</div>
+                  <div class="text-[10px] text-slate-400">$1.00 micro-transaction anomaly</div>
+                </div>
+                <span class="w-2 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></span>
+              </button>
+              <button type="button" onclick="loadPreset('fraud')" class="px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-rose-500/30 text-left transition-all group flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-semibold text-rose-400">High-Risk Fraud</div>
+                  <div class="text-[10px] text-slate-400">Test suite confirmed anomaly</div>
+                </div>
+                <span class="w-2 h-2 rounded-full bg-rose-400 shadow-sm shadow-rose-400/50"></span>
+              </button>
+            </div>
+          </div>
+
+          <form id="simulatorForm" onsubmit="handleSinglePredict(event)" class="space-y-4">
+            <!-- Primary Telemetry (Amount & Time) -->
+            <div class="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+              <div>
+                <label for="inputAmount" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Amount ($)
+                </label>
+                <div class="relative">
+                  <span class="absolute left-2.5 top-2 text-slate-400 text-xs">$</span>
+                  <input type="number" id="inputAmount" step="any" min="0" required class="glass-input w-full pl-6 pr-2 py-1.5 rounded-lg text-xs font-mono text-white placeholder-slate-500" placeholder="0.00">
+                </div>
+              </div>
+              <div>
+                <label for="inputTime" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Time (sec)
+                </label>
+                <input type="number" id="inputTime" step="any" min="0" required class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs font-mono text-white placeholder-slate-500" placeholder="0.0">
+              </div>
+            </div>
+
+            <!-- PCA Latent Features (V1 - V28) -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Latent Vectors (V1 - V28)
+                </label>
+                <button type="button" onclick="zeroPcaFeatures()" class="text-[10px] text-blue-400 hover:text-blue-300">Reset to 0.0</button>
+              </div>
+              <div class="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto p-2.5 rounded-xl bg-slate-900/50 border border-slate-800/80">
+                <div id="pcaInputsContainer" class="contents"></div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="analyzeBtn" class="w-full py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-600/25 transition-all transform active:scale-[0.99] flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+              <span>Analyze Risk & Compute SHAP</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- COLUMN 2: Inference Verdict & SHAP Waterfall (5 cols on lg) -->
+        <div class="lg:col-span-5 space-y-5">
+          
+          <!-- Gauge & Verdict Panel -->
+          <div class="glass-panel rounded-2xl p-5 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
+            <div class="w-full flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Inference Verdict</span>
+              <div class="flex items-center gap-2.5">
+                <span id="activePolicyIndicator" class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">POLICY: STRICT</span>
+                <span id="latencyTimer" class="font-mono text-xs text-slate-400">Latency: -- ms</span>
+              </div>
+            </div>
+
+            <!-- Risk Gauge (Chart.js) -->
+            <div class="relative w-40 h-40 flex items-center justify-center">
+              <canvas id="riskGaugeCanvas"></canvas>
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pt-4">
+                <span id="gaugeProbText" class="font-mono text-2xl font-extrabold text-white">0.0%</span>
+                <span class="text-[9px] uppercase tracking-wider text-slate-400">Fraud Risk</span>
+              </div>
+            </div>
+
+            <!-- Verdict Badge -->
+            <div id="verdictBadge" class="w-full py-2.5 px-4 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 font-bold text-xs tracking-wide flex items-center justify-center gap-2">
+              <span>Awaiting Transaction</span>
+            </div>
+
+            <!-- Details Row -->
+            <div class="w-full grid grid-cols-2 gap-3 text-left">
+              <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                <div class="text-[10px] text-slate-400">Estimated Probability</div>
+                <div id="metricProb" class="font-mono text-sm font-bold text-slate-200">0.000000</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                <div class="text-[10px] text-slate-400">Active Cutoff</div>
+                <div id="metricCutoff" class="font-mono text-sm font-bold text-slate-200">0.966800</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- XAI Feature Attribution Waterfall Bar Chart -->
+          <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div>
+                <h3 class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                  <span>Top 5 Local Attributions (SHAP)</span>
+                </h3>
+                <p class="text-[10px] text-slate-400 mt-0.5"><span class="text-rose-400 font-semibold">Red</span> = increases fraud risk, <span class="text-emerald-400 font-semibold">Green</span> = mitigating.</p>
+              </div>
+              <span id="baseValueDisplay" class="font-mono text-[10px] text-slate-500">Base: -0.667</span>
+            </div>
+
+            <!-- Horizontal Bar Chart -->
+            <div class="relative w-full h-44">
+              <canvas id="shapBarCanvas"></canvas>
+            </div>
+
+            <!-- Drivers List Pills -->
+            <div id="shapDriversPills" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+              <div class="text-slate-500 italic text-[11px] col-span-2 text-center py-1.5">Run an analysis to inspect local SHAP feature drivers.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- COLUMN 3: Right-Side System Telemetry & Lineage (3 cols on lg) -->
+        <div class="lg:col-span-3 space-y-4">
+          
+          <!-- Column Header -->
+          <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span class="text-xs font-bold tracking-wider uppercase text-slate-300">System Telemetry</span>
+            </div>
+            <span class="text-[10px] font-mono text-slate-500">Live V2.0</span>
+          </div>
+
+          <!-- Card A: Dataset Metadata -->
+          <div class="glass-panel rounded-2xl p-4 shadow-xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zm0 5h16M9 4v16"></path>
+                </svg>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Dataset Metadata</span>
+              </div>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">ULB</span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Source</span>
+                <span class="font-medium text-slate-200 text-[11px]">Kaggle ULB</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Total Transactions</span>
+                <span class="font-mono font-bold text-white">284,807</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Legitimate</span>
+                <span class="font-mono text-emerald-400 font-semibold text-[11px]">284,315 (99.8%)</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Fraud Cases</span>
+                <span class="font-mono text-rose-400 font-semibold text-[11px]">492 (0.17%)</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Class Ratio</span>
+                <span class="font-mono text-amber-300 text-[11px]">1 : 578</span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+                <span>Storage</span>
+                <span class="font-mono text-slate-300">SQLite (Indexed)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card B: Production Model Spec -->
+          <div class="glass-panel rounded-2xl p-4 shadow-xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                </svg>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Model Spec</span>
+              </div>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">XGBoost</span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Engine</span>
+                <span class="font-medium text-slate-200 text-[11px]">Tree Ensemble</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Resampling</span>
+                <span class="font-mono text-purple-400 text-[11px]">SMOTE (10%)</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Scaling</span>
+                <span class="font-medium text-slate-300 text-[11px]">RobustScaler</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>PR-AUC</span>
+                <span class="font-mono text-blue-400 font-bold">0.8480</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>ROC-AUC</span>
+                <span class="font-mono text-emerald-400 font-bold">0.9769</span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+                <span>XAI Engine</span>
+                <span class="font-mono text-purple-300">TreeExplainer</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card C: Operational Latency & SLA -->
+          <div class="glass-panel rounded-2xl p-4 shadow-xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Operational SLA</span>
+              </div>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">&lt;100ms</span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Target SLA</span>
+                <span class="font-mono text-slate-200 font-semibold">&lt; 100 ms</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Inference Time</span>
+                <span id="telemetryInferenceTime" class="font-mono text-emerald-400 font-bold flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  &lt; 15 ms
+                </span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>SHAP Overhead</span>
+                <span class="font-mono text-cyan-300">~ 5.2 ms</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Runtime</span>
+                <span class="font-medium text-slate-300 text-[11px]">FastAPI + Uvicorn</span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+                <span>Artifact</span>
+                <span class="font-mono text-slate-300">fraud_model.joblib</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- SECTION 2: BATCH CSV AUDITOR -->
+    <section id="batchSection" class="hidden space-y-6">
+      
+      <!-- Top Action Bar & Drop Zone -->
+      <div class="glass-panel rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>Batch CSV Transaction Auditor</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Upload a CSV file containing transactions to evaluate large batches instantly.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Scenario Preset Dropdown -->
+            <select id="sampleScenarioSelect" class="glass-input px-3 py-2 rounded-xl text-xs font-medium text-slate-200 bg-slate-900 border border-slate-700/80 focus:border-blue-500">
+              <option value="15,2">Random Mixed Batch (15 rows, 2 frauds)</option>
+              <option value="25,8">Attack Spike Batch (25 rows, 8 frauds)</option>
+              <option value="30,0">Clean Traffic (30 rows, 0 frauds)</option>
+              <option value="50,1">Normal Day Batch (50 rows, 1 fraud)</option>
+            </select>
+
+            <!-- Load Directly into Auditor -->
+            <button type="button" id="loadDirectBtn" onclick="loadDynamicSampleBatch()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-300 flex items-center gap-1.5 transition-all">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              <span>Stage & Run Batch</span>
+            </button>
+
+            <!-- Download Dynamic CSV Template -->
+            <button type="button" id="downloadCsvBtn" onclick="downloadDynamicSampleCsv()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center gap-2 transition-all">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              <span>Download CSV Template</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Drop Zone -->
+        <div id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)" onclick="triggerFileInput()" class="border-2 border-dashed border-slate-700/80 hover:border-blue-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 bg-slate-900/40 hover:bg-slate-900/80 group">
+          <input type="file" id="csvFileInput" accept=".csv" onchange="handleFileSelected(event)" class="hidden">
+          <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform text-blue-400">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+          </div>
+          <div class="text-sm font-semibold text-slate-200">
+            <span class="text-blue-400">Click to upload</span> or drag and drop transaction CSV
+          </div>
+          <div class="text-xs text-slate-500 mt-1">Accepts standard Kaggle format (`Time`, `V1`..`V28`, `Amount`)</div>
+          <div id="selectedFileName" class="mt-3 text-xs font-mono font-semibold text-emerald-400 hidden"></div>
+        </div>
+
+        <!-- Batch Action Controls (Prominent Run and Clear buttons) -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <!-- Run Batch Audit Button -->
+            <button type="button" id="runBatchAuditBtn" onclick="executeBatchAudit()" disabled class="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-50 transition-all flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>Run Batch Audit</span>
+            </button>
+
+            <!-- Clear / Upload New File Button -->
+            <button type="button" id="clearBatchBtn" onclick="clearBatchState()" class="w-full sm:w-auto py-3 px-4 rounded-xl font-semibold text-xs bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60 transition-all flex items-center justify-center gap-2">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span>Clear / Upload New File</span>
+            </button>
+          </div>
+
+          <div id="batchStatusMessage" class="text-xs text-slate-400 italic">
+            Select or drag a CSV file above to enable batch audit.
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="batchProgressContainer" class="hidden space-y-2">
+          <div class="flex justify-between text-xs font-semibold text-slate-400">
+            <span id="batchProgressLabel">Executing vector inference & SHAP attributions...</span>
+            <span id="batchProgressPercent">100%</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div id="batchProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Metrics Cards -->
+      <div id="batchSummaryGrid" class="hidden grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Scanned</div>
+          <div id="sumTotal" class="font-mono text-2xl font-bold text-white mt-1">0</div>
+        </div>
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Frauds Intercepted</div>
+          <div id="sumFlagged" class="font-mono text-2xl font-bold text-rose-400 mt-1">0</div>
+        </div>
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Anomaly Rate</div>
+          <div id="sumRate" class="font-mono text-2xl font-bold text-amber-400 mt-1">0.0%</div>
+        </div>
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Policy Cutoff</div>
+          <div id="sumCutoff" class="font-mono text-2xl font-bold text-slate-300 mt-1">0.9668</div>
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <div id="batchResultsTableContainer" class="hidden glass-panel rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white">Audited Transactions</h3>
+            <p class="text-xs text-slate-400">Click any row to open the Explainability Drawer with its specific Top 3 SHAP drivers.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="tableFilterInput" onkeyup="filterBatchTable()" placeholder="Search amount or ID..." class="glass-input px-3 py-1.5 rounded-xl text-xs text-white placeholder-slate-500">
+            <button onclick="exportAuditedCsv()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/80 text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4"># Row</th>
+                <th class="py-3 px-4">Time (s)</th>
+                <th class="py-3 px-4">Amount</th>
+                <th class="py-3 px-4">Probability</th>
+                <th class="py-3 px-4">Risk Bar</th>
+                <th class="py-3 px-4">Verdict</th>
+                <th class="py-3 px-4">Explainability</th>
+              </tr>
+            </thead>
+            <tbody id="batchTableBody" class="divide-y divide-slate-800/80 font-mono">
+              <!-- Dynamically rendered rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="flex items-center justify-between text-xs text-slate-400 pt-2">
+          <span id="pageInfo">Showing page 1 of 1</span>
+          <div class="flex items-center gap-2">
+            <button id="prevPageBtn" onclick="changePage(-1)" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed">Previous</button>
+            <button id="nextPageBtn" onclick="changePage(1)" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- SLIDE-OVER EXPLAINABILITY MODAL / DRAWER -->
+  <div id="explainModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-700 space-y-5 animate-fade-in">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+          <h3 id="modalTitle" class="text-base font-bold text-white">Transaction #X Risk Audit</h3>
+        </div>
+        <button onclick="closeExplainModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <!-- Quick Summary -->
+      <div id="modalSummary" class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-slate-400 text-[10px]">Amount</div>
+          <div id="modalAmount" class="font-bold text-white mt-0.5">$0.00</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-slate-400 text-[10px]">Probability</div>
+          <div id="modalProb" class="font-bold text-rose-400 mt-0.5">0.0%</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-slate-400 text-[10px]">Verdict</div>
+          <div id="modalVerdict" class="font-bold text-emerald-400 mt-0.5">SAFE</div>
+        </div>
+      </div>
+
+      <!-- Top 3 Drivers -->
+      <div>
+        <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Key Driving Factors (SHAP Local Attribution)</h4>
+        <div id="modalDriversList" class="space-y-2">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeExplainModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white">Close Audit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Global State ---
+    const API_KEY = 'sentinel-dev-secret-key-2026';
+    let riskGaugeChart = null;
+    let shapBarChart = null;
+    let batchData = [];
+    let filteredBatchData = [];
+    let currentPage = 1;
+    const pageSize = 15;
+    let currentPolicy = "STRICT";
+    let globalThreshold = 0.9668;
+    let stagedBatchFile = null;
+
+    // --- Presets Data ---
+    const PRESETS = {
+      legit: {
+        amount: 42.75,
+        time_elapsed: 85240.0,
+        pca: {
+          v1: 0.12, v2: -0.05, v3: 0.88, v4: 0.23, v5: -0.11,
+          v6: 0.04, v7: 0.15, v8: -0.02, v9: 0.08, v10: -0.03,
+          v11: -0.21, v12: 0.34, v13: -0.05, v14: 0.12, v15: 0.45,
+          v16: -0.08, v17: 0.05, v18: -0.01, v19: 0.10, v20: 0.02,
+          v21: 0.01, v22: 0.04, v23: -0.02, v24: 0.18, v25: -0.05,
+          v26: 0.02, v27: 0.01, v28: 0.01
+        }
+      },
+      card_test: {
+        amount: 1.00,
+        time_elapsed: 24310.0,
+        pca: {
+          v1: -1.85, v2: 1.42, v3: -0.95, v4: 2.15, v5: -0.41,
+          v6: -0.89, v7: -1.40, v8: 0.82, v9: -1.10, v10: -1.35,
+          v11: 1.80, v12: -1.75, v13: 0.12, v14: -2.10, v15: 0.15,
+          v16: -0.80, v17: -1.50, v18: 0.05, v19: 0.30, v20: 0.15,
+          v21: 0.35, v22: -0.10, v23: -0.20, v24: 0.15, v25: 0.10,
+          v26: 0.12, v27: 0.18, v28: -0.08
+        }
+      },
+      fraud: {
+        amount: 0.0,
+        time_elapsed: 406.0,
+        pca: {
+          v1: -2.3122, v2: 1.9519, v3: -1.6098, v4: 3.9979, v5: -0.5221,
+          v6: -1.4265, v7: -2.5373, v8: 1.3916, v9: -2.7700, v10: -2.7722,
+          v11: 3.2020, v12: -2.8999, v13: -0.5952, v14: -4.2892, v15: 0.3897,
+          v16: -1.1407, v17: -2.8300, v18: -0.0168, v19: 0.4169, v20: 0.1269,
+          v21: 0.5172, v22: -0.0350, v23: -0.4652, v24: 0.3201, v25: 0.0445,
+          v26: 0.1778, v27: 0.2611, v28: -0.1432
+        }
+      }
+    };
+
+    // --- Init UI ---
+    window.addEventListener('DOMContentLoaded', () => {
+      initPcaInputs();
+      initGaugeChart();
+      initShapBarChart();
+      loadPreset('legit');
+      fetchPolicy();
+      checkHealth();
+      setInterval(checkHealth, 10000);
+    });
+
+    // Populate V1-V28 inputs
+    function initPcaInputs() {
+      const container = document.getElementById('pcaInputsContainer');
+      container.innerHTML = '';
+      for (let i = 1; i <= 28; i++) {
+        const wrap = document.createElement('div');
+        wrap.className = 'space-y-1';
+        wrap.innerHTML = `
+          <label class="text-[10px] font-mono text-slate-400 font-semibold block text-center">V${i}</label>
+          <input type="number" id="v${i}" step="any" required class="glass-input w-full px-1.5 py-1 rounded text-center text-xs font-mono text-white" value="0.0">
+        `;
+        container.appendChild(wrap);
+      }
+    }
+
+    // Initialize Gauge Chart
+    function initGaugeChart() {
+      const ctx = document.getElementById('riskGaugeCanvas').getContext('2d');
+      riskGaugeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [0, 100],
+            backgroundColor: ['#22c55e', '#1e293b'],
+            borderWidth: 0,
+            circumference: 240,
+            rotation: 240
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '80%',
+          plugins: {
+            tooltip: { enabled: false },
+            legend: { display: false }
+          },
+          animation: {
+            duration: 800,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+
+    // Initialize SHAP Waterfall / Horizontal Bar Chart
+    function initShapBarChart() {
+      const ctx = document.getElementById('shapBarCanvas').getContext('2d');
+      shapBarChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5'],
+          datasets: [{
+            label: 'SHAP Value',
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: ['#3b82f6', '#3b82f6', '#3b82f6', '#3b82f6', '#3b82f6'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: 'rgba(51, 65, 85, 0.4)' },
+              ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: '#f8fafc', font: { family: 'JetBrains Mono', size: 11, weight: 'bold' } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `SHAP Impact: ${context.parsed.x.toFixed(4)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateGauge(prob, threshold) {
+      const pct = Math.min(Math.max(prob * 100, 0), 100);
+      const isFraud = prob >= threshold;
+      const color = isFraud ? '#ef4444' : '#22c55e';
+
+      riskGaugeChart.data.datasets[0].data = [pct, 100 - pct];
+      riskGaugeChart.data.datasets[0].backgroundColor = [color, '#1e293b'];
+      riskGaugeChart.update();
+
+      document.getElementById('gaugeProbText').textContent = pct.toFixed(1) + '%';
+      document.getElementById('gaugeProbText').style.color = color;
+    }
+
+    function updateShapChart(drivers, baseVal) {
+      if (!drivers || drivers.length === 0) return;
+
+      const labels = drivers.map(d => d.feature.toUpperCase());
+      const values = drivers.map(d => d.shap_value);
+      const colors = drivers.map(d => d.direction === 'RISK_FACTOR' ? '#ef4444' : '#22c55e');
+
+      shapBarChart.data.labels = labels;
+      shapBarChart.data.datasets[0].data = values;
+      shapBarChart.data.datasets[0].backgroundColor = colors;
+      shapBarChart.update();
+
+      document.getElementById('baseValueDisplay').textContent = `Base: ${baseVal.toFixed(4)}`;
+
+      // Update Drivers Pills
+      const container = document.getElementById('shapDriversPills');
+      container.innerHTML = '';
+      drivers.forEach(d => {
+        const isRisk = d.direction === 'RISK_FACTOR';
+        const pill = document.createElement('div');
+        pill.className = `p-2 rounded-xl border flex items-center justify-between font-mono text-[11px] ${
+          isRisk ? 'bg-rose-500/10 border-rose-500/20 text-rose-300' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+        }`;
+        pill.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full ${isRisk ? 'bg-rose-500' : 'bg-emerald-500'}"></span>
+            <span class="font-bold">${d.feature.toUpperCase()}</span>
+            <span class="text-slate-400">(${d.observed_value !== null ? d.observed_value : '-'})</span>
+          </div>
+          <span class="font-bold">${d.shap_value > 0 ? '+' : ''}${d.shap_value.toFixed(4)}</span>
+        `;
+        container.appendChild(pill);
+      });
+    }
+
+    // --- Policy Management ---
+    async function fetchPolicy() {
+      try {
+        const res = await fetch('/policy', {
+          headers: { 'X-API-Key': API_KEY }
+        });
+        const data = await res.json();
+        applyPolicyUi(data.active_policy, data.current_threshold);
+      } catch (err) {
+        console.error('Failed to fetch policy:', err);
+      }
+    }
+
+    async function setPolicyMode(mode) {
+      try {
+        const res = await fetch('/policy', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify({ policy_mode: mode })
+        });
+        if (!res.ok) throw new Error('Policy update failed');
+        const data = await res.json();
+        applyPolicyUi(data.active_policy, data.current_threshold);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function applyPolicyUi(policy, threshold) {
+      currentPolicy = policy;
+      globalThreshold = threshold;
+
+      // Update Toolbar Buttons
+      const modes = ['STRICT', 'BALANCED', 'AGGRESSIVE'];
+      modes.forEach(m => {
+        const btn = document.getElementById(`policyBtn${m.charAt(0) + m.slice(1).toLowerCase()}`);
+        if (!btn) return;
+        if (m === policy) {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-blue-600 text-white shadow-md shadow-blue-600/30';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800';
+        }
+      });
+
+      // Update Displays
+      document.getElementById('activeThresholdDisplay').textContent = threshold.toFixed(4);
+      document.getElementById('activePolicyIndicator').textContent = `POLICY: ${policy}`;
+      document.getElementById('metricCutoff').textContent = threshold.toFixed(6);
+      const sumCutoff = document.getElementById('sumCutoff');
+      if (sumCutoff) sumCutoff.textContent = threshold.toFixed(4);
+    }
+
+    // Tab Switcher
+    function switchTab(tab) {
+      const simSec = document.getElementById('simulatorSection');
+      const batchSec = document.getElementById('batchSection');
+      const tabSimBtn = document.getElementById('tabSimBtn');
+      const tabBatchBtn = document.getElementById('tabBatchBtn');
+
+      if (tab === 'simulator') {
+        simSec.classList.remove('hidden');
+        batchSec.classList.add('hidden');
+        tabSimBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2';
+        tabBatchBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 flex items-center gap-2';
+      } else {
+        simSec.classList.add('hidden');
+        batchSec.classList.remove('hidden');
+        tabBatchBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2';
+        tabSimBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 flex items-center gap-2';
+      }
+    }
+
+    // Health Check
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        if (data.status === 'healthy') {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse';
+          text.textContent = 'API & SHAP Ready';
+          if (data.optimal_threshold) {
+            globalThreshold = data.optimal_threshold;
+            document.getElementById('activeThresholdDisplay').textContent = globalThreshold.toFixed(4);
+            document.getElementById('metricCutoff').textContent = globalThreshold.toFixed(6);
+          }
+        } else {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+          text.textContent = 'Model Loading';
+        }
+      } catch (err) {
+        document.getElementById('statusDot').className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+        document.getElementById('statusText').textContent = 'API Offline';
+      }
+    }
+
+    // Load Presets
+    function loadPreset(key) {
+      const preset = PRESETS[key];
+      if (!preset) return;
+      document.getElementById('inputAmount').value = preset.amount;
+      document.getElementById('inputTime').value = preset.time_elapsed;
+      for (let i = 1; i <= 28; i++) {
+        const field = document.getElementById(`v${i}`);
+        if (field) field.value = preset.pca[`v${i}`] !== undefined ? preset.pca[`v${i}`] : 0.0;
+      }
+    }
+
+    function zeroPcaFeatures() {
+      for (let i = 1; i <= 28; i++) {
+        const field = document.getElementById(`v${i}`);
+        if (field) field.value = 0.0;
+      }
+    }
+
+    // Single Predict with SHAP
+    async function handleSinglePredict(e) {
+      e.preventDefault();
+      const btn = document.getElementById('analyzeBtn');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span><span>Running XGBoost & SHAP Explainer...</span>`;
+
+      const payload = {
+        amount: parseFloat(document.getElementById('inputAmount').value),
+        time_elapsed: parseFloat(document.getElementById('inputTime').value),
+      };
+      for (let i = 1; i <= 28; i++) {
+        payload[`v${i}`] = parseFloat(document.getElementById(`v${i}`).value) || 0.0;
+      }
+
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify(payload)
+        });
+        const latency = (performance.now() - t0).toFixed(1);
+        document.getElementById('latencyTimer').textContent = `Latency: ${latency} ms`;
+        const teleTimer = document.getElementById('telemetryInferenceTime');
+        if (teleTimer) {
+          teleTimer.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ${latency} ms`;
+        }
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        // Update Gauge & Metrics
+        updateGauge(data.fraud_probability, data.decision_threshold);
+        document.getElementById('metricProb').textContent = data.fraud_probability.toFixed(6);
+        document.getElementById('metricCutoff').textContent = data.decision_threshold.toFixed(6);
+        document.getElementById('activePolicyIndicator').textContent = `POLICY: ${data.active_policy}`;
+
+        // Update SHAP Chart & Drivers
+        updateShapChart(data.top_risk_drivers, data.base_value);
+
+        // Update Verdict Badge
+        const verdictBadge = document.getElementById('verdictBadge');
+        if (data.is_fraud) {
+          verdictBadge.className = 'w-full py-3 px-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-rose-500/10';
+          verdictBadge.innerHTML = `
+            <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <span>FLAGGED AS FRAUD</span>
+          `;
+        } else {
+          verdictBadge.className = 'w-full py-3 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10';
+          verdictBadge.innerHTML = `
+            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>APPROVED / LOW RISK</span>
+          `;
+        }
+      } catch (err) {
+        alert(`Prediction failed: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+          </svg>
+          <span>Analyze Risk & Compute SHAP Explanations</span>
+        `;
+      }
+    }
+
+    // --- Enhanced Drag and Drop & Batch Execution Controls ---
+    function triggerFileInput() {
+      // Clear file input value before click so selecting same file triggers change
+      const fileInput = document.getElementById('csvFileInput');
+      fileInput.value = '';
+      fileInput.click();
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      document.getElementById('dropZone').classList.add('border-blue-500', 'bg-slate-900');
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      document.getElementById('dropZone').classList.remove('border-blue-500', 'bg-slate-900');
+    }
+
+    function handleFileDrop(e) {
+      e.preventDefault();
+      document.getElementById('dropZone').classList.remove('border-blue-500', 'bg-slate-900');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        stageCsvFile(e.dataTransfer.files[0]);
+      }
+    }
+
+    function handleFileSelected(e) {
+      if (e.target.files && e.target.files.length > 0) {
+        stageCsvFile(e.target.files[0]);
+      }
+    }
+
+    function stageCsvFile(file) {
+      if (!file.name.endsWith('.csv')) {
+        alert('Please select a valid .csv file.');
+        return;
+      }
+
+      stagedBatchFile = file;
+
+      // Update File Name Display
+      const nameElem = document.getElementById('selectedFileName');
+      nameElem.textContent = `Ready for Audit: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      nameElem.classList.remove('hidden');
+
+      // Update Status message
+      document.getElementById('batchStatusMessage').textContent = 'File loaded successfully. Click "Run Batch Audit" to start.';
+
+      // Light up the Run Batch Audit button
+      const runBtn = document.getElementById('runBatchAuditBtn');
+      runBtn.disabled = false;
+      runBtn.className = 'w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 transition-all transform active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2';
+
+      // Hide prior results to signal ready for fresh audit
+      document.getElementById('batchSummaryGrid').classList.add('hidden');
+      document.getElementById('batchResultsTableContainer').classList.add('hidden');
+    }
+
+    function clearBatchState() {
+      stagedBatchFile = null;
+      const fileInput = document.getElementById('csvFileInput');
+      if (fileInput) fileInput.value = '';
+
+      const nameElem = document.getElementById('selectedFileName');
+      nameElem.textContent = '';
+      nameElem.classList.add('hidden');
+
+      // Reset Run button to disabled
+      const runBtn = document.getElementById('runBatchAuditBtn');
+      runBtn.disabled = true;
+      runBtn.className = 'w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-50 transition-all flex items-center justify-center gap-2';
+
+      document.getElementById('batchStatusMessage').textContent = 'Select or drag a CSV file above to enable batch audit.';
+
+      // Hide all results
+      document.getElementById('batchProgressContainer').classList.add('hidden');
+      document.getElementById('batchSummaryGrid').classList.add('hidden');
+      document.getElementById('batchResultsTableContainer').classList.add('hidden');
+
+      batchData = [];
+      filteredBatchData = [];
+    }
+
+    async function executeBatchAudit() {
+      if (!stagedBatchFile) {
+        alert('Please select or drag a CSV file first.');
+        return;
+      }
+
+      const runBtn = document.getElementById('runBatchAuditBtn');
+      runBtn.disabled = true;
+      runBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span><span>Auditing Batch...</span>`;
+
+      const progressContainer = document.getElementById('batchProgressContainer');
+      progressContainer.classList.remove('hidden');
+
+      const formData = new FormData();
+      formData.append('file', stagedBatchFile);
+
+      try {
+        const res = await fetch('/predict-batch-csv', {
+          method: 'POST',
+          headers: {
+            'X-API-Key': API_KEY
+          },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.detail || `Server returned ${res.status}`);
+        }
+
+        const data = await res.json();
+        renderBatchResults(data);
+        document.getElementById('batchStatusMessage').textContent = `Audit completed: ${data.summary.total_evaluated} transactions evaluated.`;
+      } catch (err) {
+        alert(`Batch audit error: ${err.message}`);
+        document.getElementById('batchStatusMessage').textContent = `Audit failed: ${err.message}`;
+      } finally {
+        progressContainer.classList.add('hidden');
+        runBtn.disabled = false;
+        runBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Run Batch Audit</span>
+        `;
+      }
+    }
+
+    async function loadDynamicSampleBatch() {
+      const select = document.getElementById('sampleScenarioSelect');
+      const [total, fraud] = select.value.split(',').map(Number);
+      const btn = document.getElementById('loadDirectBtn');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin inline-block w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full"></span><span>Sampling SQL...</span>`;
+      
+      const progressContainer = document.getElementById('batchProgressContainer');
+      progressContainer.classList.remove('hidden');
+
+      try {
+        const sampleRes = await fetch(`/api/sample-json?total_rows=${total}&fraud_count=${fraud}`, {
+          headers: { 'X-API-Key': API_KEY }
+        });
+        if (!sampleRes.ok) throw new Error(`HTTP ${sampleRes.status} sampling failed`);
+        const sampleData = await sampleRes.json();
+
+        const predictRes = await fetch('/predict-batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify(sampleData)
+        });
+        if (!predictRes.ok) throw new Error(`HTTP ${predictRes.status} prediction failed`);
+        const auditResult = await predictRes.json();
+
+        renderBatchResults(auditResult);
+        const nameElem = document.getElementById('selectedFileName');
+        nameElem.textContent = `Loaded Dynamic SQL Batch: ${total} records (${fraud} confirmed frauds injected)`;
+        nameElem.classList.remove('hidden');
+        document.getElementById('batchStatusMessage').textContent = `Audited ${total} dynamic SQL transactions from data/creditcard.db.`;
+      } catch (err) {
+        alert(`Dynamic sample error: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span>Stage & Run Batch</span>
+        `;
+        progressContainer.classList.add('hidden');
+      }
+    }
+
+    function downloadDynamicSampleCsv() {
+      const select = document.getElementById('sampleScenarioSelect');
+      const [total, fraud] = select.value.split(',').map(Number);
+      window.location.href = `/api/sample-csv?total_rows=${total}&fraud_count=${fraud}`;
+    }
+
+    function renderBatchResults(data) {
+      batchData = data.predictions || [];
+      filteredBatchData = [...batchData];
+      currentPage = 1;
+
+      // Summary
+      document.getElementById('sumTotal').textContent = data.summary.total_evaluated.toLocaleString();
+      document.getElementById('sumFlagged').textContent = data.summary.total_flagged.toLocaleString();
+      document.getElementById('sumRate').textContent = (data.summary.flagged_rate * 100).toFixed(2) + '%';
+      document.getElementById('sumCutoff').textContent = data.summary.decision_threshold.toFixed(4);
+
+      document.getElementById('batchSummaryGrid').classList.remove('hidden');
+      document.getElementById('batchResultsTableContainer').classList.remove('hidden');
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('batchTableBody');
+      tbody.innerHTML = '';
+
+      const totalItems = filteredBatchData.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const start = (currentPage - 1) * pageSize;
+      const pageItems = filteredBatchData.slice(start, start + pageSize);
+
+      pageItems.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition-colors cursor-pointer';
+        tr.onclick = () => openExplainModal(item);
+
+        const pct = (item.fraud_probability * 100).toFixed(2);
+        const barColor = item.is_fraud ? 'bg-rose-500' : 'bg-emerald-500';
+        const pill = item.is_fraud
+          ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">FLAGGED</span>`
+          : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">SAFE</span>`;
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 text-slate-400">#${item.row_id}</td>
+          <td class="py-2.5 px-4 text-slate-300">${item.time_elapsed.toFixed(1)}</td>
+          <td class="py-2.5 px-4 text-white font-semibold">$${item.amount.toFixed(2)}</td>
+          <td class="py-2.5 px-4 ${item.is_fraud ? 'text-rose-400 font-bold' : 'text-slate-300'}">${item.fraud_probability.toFixed(6)}</td>
+          <td class="py-2.5 px-4 w-28">
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="${barColor} h-1.5 rounded-full" style="width: ${Math.min(pct, 100)}%"></div>
+            </div>
+          </td>
+          <td class="py-2.5 px-4">${pill}</td>
+          <td class="py-2.5 px-4">
+            <button class="px-2 py-1 rounded bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 text-[10px] font-bold border border-purple-500/20">
+              View XAI
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('pageInfo').textContent = `Showing ${Math.min(start + 1, totalItems)} - ${Math.min(start + pageItems.length, totalItems)} of ${totalItems} entries (Page ${currentPage} of ${totalPages})`;
+      document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+      document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      renderTable();
+    }
+
+    function filterBatchTable() {
+      const q = document.getElementById('tableFilterInput').value.toLowerCase();
+      filteredBatchData = batchData.filter(item => {
+        return item.row_id.toString().includes(q) ||
+               item.amount.toString().includes(q) ||
+               (item.is_fraud ? 'flagged' : 'safe').includes(q);
+      });
+      currentPage = 1;
+      renderTable();
+    }
+
+    // Modal Drawer for Row XAI
+    function openExplainModal(item) {
+      document.getElementById('modalTitle').textContent = `Transaction #${item.row_id} Explainability Audit`;
+      document.getElementById('modalAmount').textContent = `$${item.amount.toFixed(2)}`;
+      document.getElementById('modalProb').textContent = `${(item.fraud_probability * 100).toFixed(2)}%`;
+      document.getElementById('modalProb').className = item.is_fraud ? 'font-bold text-rose-400 mt-0.5' : 'font-bold text-slate-200 mt-0.5';
+      
+      const v = document.getElementById('modalVerdict');
+      v.textContent = item.is_fraud ? 'FLAGGED AS FRAUD' : 'APPROVED';
+      v.className = item.is_fraud ? 'font-bold text-rose-400 mt-0.5' : 'font-bold text-emerald-400 mt-0.5';
+
+      const driversContainer = document.getElementById('modalDriversList');
+      driversContainer.innerHTML = '';
+
+      if (item.top_risk_drivers && item.top_risk_drivers.length > 0) {
+        item.top_risk_drivers.forEach(d => {
+          const isRisk = d.direction === 'RISK_FACTOR';
+          const row = document.createElement('div');
+          row.className = `p-3 rounded-xl border flex items-center justify-between font-mono text-xs ${
+            isRisk ? 'bg-rose-500/10 border-rose-500/20 text-rose-300' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+          }`;
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full ${isRisk ? 'bg-rose-500' : 'bg-emerald-500'}"></span>
+              <span class="font-bold text-white">${d.feature.toUpperCase()}</span>
+              <span class="text-slate-400 text-[11px]">${isRisk ? '(Boosts Risk)' : '(Mitigating Factor)'}</span>
+            </div>
+            <div class="font-bold">
+              ${d.shap_value > 0 ? '+' : ''}${d.shap_value.toFixed(4)}
+            </div>
+          `;
+          driversContainer.appendChild(row);
+        });
+      } else {
+        driversContainer.innerHTML = '<div class="text-slate-500 italic text-xs py-2">No individual factors extracted.</div>';
+      }
+
+      document.getElementById('explainModal').classList.remove('hidden');
+    }
+
+    function closeExplainModal() {
+      document.getElementById('explainModal').classList.add('hidden');
+    }
+
+    function downloadSampleCsv() {
+      const headers = ['Time', ...Array.from({length: 28}, (_, i) => `V${i+1}`), 'Amount'];
+      const rows = [];
+      
+      for (let r = 0; r < 8; r++) {
+        const row = [
+          (1000 + r * 300).toFixed(1),
+          ...Array.from({length: 28}, () => ((Math.random() - 0.5) * 0.4).toFixed(4)),
+          (15.0 + Math.random() * 80).toFixed(2)
+        ];
+        rows.push(row.join(','));
+      }
+      const f1 = PRESETS.fraud;
+      const f1Row = [f1.time_elapsed, ...Array.from({length: 28}, (_, i) => f1.pca[`v${i+1}`]), f1.amount];
+      rows.push(f1Row.join(','));
+
+      const f2 = PRESETS.card_test;
+      const f2Row = [f2.time_elapsed, ...Array.from({length: 28}, (_, i) => f2.pca[`v${i+1}`]), f2.amount];
+      rows.push(f2Row.join(','));
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "sample_transactions_batch.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportAuditedCsv() {
+      if (!batchData.length) return;
+      const headers = ['row_id', 'time_elapsed', 'amount', 'fraud_probability', 'decision_threshold', 'is_fraud', 'top_driver_1', 'top_driver_2', 'top_driver_3'];
+      const rows = batchData.map(b => {
+        const d1 = b.top_risk_drivers && b.top_risk_drivers[0] ? `${b.top_risk_drivers[0].feature}(${b.top_risk_drivers[0].shap_value})` : '';
+        const d2 = b.top_risk_drivers && b.top_risk_drivers[1] ? `${b.top_risk_drivers[1].feature}(${b.top_risk_drivers[1].shap_value})` : '';
+        const d3 = b.top_risk_drivers && b.top_risk_drivers[2] ? `${b.top_risk_drivers[2].feature}(${b.top_risk_drivers[2].shap_value})` : '';
+        return [b.row_id, b.time_elapsed, b.amount, b.fraud_probability, b.decision_threshold, b.is_fraud ? 1 : 0, d1, d2, d3];
+      });
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "fraud_audit_with_xai.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>

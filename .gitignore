@@ -1,0 +1,22 @@
+# Data & Heavy Database files
+data/*.csv
+data/*.db
+data/test_batches/*.csv
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+
+# Logs & Audit trails
+logs/*.log
+
+# Python bytecode & Caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment configs & secrets
+*.env
+.env

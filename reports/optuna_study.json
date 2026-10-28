@@ -1,0 +1,42 @@
+{
+    "study_name": "sentinel_xgboost_study",
+    "best_trial_number": 1,
+    "best_pr_auc": 0.880257110112178,
+    "best_params": {
+        "max_depth": 8,
+        "learning_rate": 0.2186729150910798,
+        "subsample": 0.9350601871606238,
+        "colsample_bytree": 0.8229295105873923,
+        "scale_pos_weight": 1.9504769454171291,
+        "n_estimators": 125
+    },
+    "n_trials": 2,
+    "trials": [
+        {
+            "number": 0,
+            "value": 0.8472664315630578,
+            "params": {
+                "max_depth": 7,
+                "learning_rate": 0.09944078900340556,
+                "subsample": 0.9887950679222188,
+                "colsample_bytree": 0.8609924257948329,
+                "scale_pos_weight": 7.5276161802649835,
+                "n_estimators": 100
+            },
+            "state": "TrialState.COMPLETE"
+        },
+        {
+            "number": 1,
+            "value": 0.880257110112178,
+            "params": {
+                "max_depth": 8,
+                "learning_rate": 0.2186729150910798,
+                "subsample": 0.9350601871606238,
+                "colsample_bytree": 0.8229295105873923,
+                "scale_pos_weight": 1.9504769454171291,
+                "n_estimators": 125
+            },
+            "state": "TrialState.COMPLETE"
+        }
+    ]
+}

@@ -1,0 +1,26 @@
+{
+    "pr_auc": 0.880257110112178,
+    "roc_auc": 0.9800718578089649,
+    "optimal_threshold": 0.7168983817100525,
+    "f1_score": 0.8663101604273085,
+    "precision": 0.9101123595505618,
+    "recall": 0.826530612244898,
+    "confusion_matrix": {
+        "true_negatives": 56856,
+        "false_positives": 8,
+        "false_negatives": 17,
+        "true_positives": 81
+    },
+    "test_samples": 56962,
+    "test_fraud_count": 98,
+    "champion_hyperparameters": {
+        "max_depth": 8,
+        "learning_rate": 0.2186729150910798,
+        "subsample": 0.9350601871606238,
+        "colsample_bytree": 0.8229295105873923,
+        "scale_pos_weight": 1.9504769454171291,
+        "n_estimators": 125
+    },
+    "optuna_best_value": 0.880257110112178,
+    "total_trials_evaluated": 2
+}

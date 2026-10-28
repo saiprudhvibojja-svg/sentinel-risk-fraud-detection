@@ -1,0 +1,78 @@
+name: Train & Evaluate Fraud Model
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/train*.py'
+      - 'models/**'
+  workflow_dispatch:
+    inputs:
+      n_trials:
+        description: 'Number of Optuna Bayesian trials'
+        required: false
+        default: '20'
+        type: string
+
+jobs:
+  train-and-evaluate:
+    name: Cloud Training & Evaluation Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Authenticate Kaggle CLI
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          mkdir -p ~/.kaggle
+          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: Download Dataset from Kaggle
+        run: |
+          mkdir -p data
+          kaggle datasets download -d mlg-ulb/creditcardfraud -p data/ --unzip
+
+      - name: Ingest Dataset into SQLite DB
+        run: |
+          python src/db.py
+
+      - name: Run Optuna Cloud Training
+        run: |
+          TRIALS="${{ github.event.inputs.n_trials }}"
+          if [ -z "$TRIALS" ]; then
+            TRIALS="20"
+          fi
+          python src/train_optuna.py --n-trials $TRIALS
+
+      - name: Run Test Suite
+        run: |
+          pytest -v tests/
+
+      - name: Upload Champion Model & Evaluation Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sentinel-risk-model-bundle
+          path: |
+            models/fraud_model.joblib
+            reports/metrics.json
+            reports/pr_curve.png
+            reports/optuna_study.json
+          retention-days: 14
