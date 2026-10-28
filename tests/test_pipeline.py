@@ -2,12 +2,14 @@ import os
 import sqlite3
 import pytest
 from pathlib import Path
+from unittest.mock import patch
+import numpy as np
 import pandas as pd
 from fastapi.testclient import TestClient
 from sklearn.preprocessing import RobustScaler
 import joblib
 
-from src.api import app, load_model, TransactionInput
+from src.api import app, load_model, TransactionInput, ensure_model_loaded
 from src.db import Base, Transaction, get_engine
 
 
@@ -316,21 +318,29 @@ def test_policy_management_endpoints(client):
 
 
 def test_policy_switch_flips_borderline_fraud(client, card_testing_payload):
-    # Under STRICT (threshold = 0.9668), card-testing (~0.92 prob) is SAFE
-    client.patch("/policy", json={"policy_mode": "STRICT"})
-    res_strict = client.post("/predict", json=card_testing_payload)
-    assert res_strict.status_code == 200
-    data_strict = res_strict.json()
-    assert data_strict["active_policy"] == "STRICT"
-    assert data_strict["is_fraud"] is False, "Card-testing should be SAFE under STRICT policy"
+    # Deterministically mock predict_proba to return probability = 0.85 (between AGGRESSIVE 0.70 and STRICT 0.9668)
+    artifacts, _ = ensure_model_loaded()
+    model = artifacts["model"]
+    mock_probas = np.array([[0.15, 0.85]])
 
-    # Switch to AGGRESSIVE (threshold = 0.7000)
-    client.patch("/policy", json={"policy_mode": "AGGRESSIVE"})
-    res_agg = client.post("/predict", json=card_testing_payload)
-    assert res_agg.status_code == 200
-    data_agg = res_agg.json()
-    assert data_agg["active_policy"] == "AGGRESSIVE"
-    assert data_agg["is_fraud"] is True, "Card-testing should flip to FLAGGED AS FRAUD under AGGRESSIVE policy"
+    with patch.object(model, "predict_proba", return_value=mock_probas):
+        # 1. Under STRICT (threshold = 0.9668), 0.85 is below cutoff -> SAFE
+        client.patch("/policy", json={"policy_mode": "STRICT"})
+        res_strict = client.post("/predict", json=card_testing_payload)
+        assert res_strict.status_code == 200
+        data_strict = res_strict.json()
+        assert data_strict["active_policy"] == "STRICT"
+        assert data_strict["fraud_probability"] == 0.85
+        assert data_strict["is_fraud"] is False, "0.85 probability should be SAFE under STRICT policy"
+
+        # 2. Switch to AGGRESSIVE (threshold = 0.7000), 0.85 is above cutoff -> FLIPS TO FRAUD
+        client.patch("/policy", json={"policy_mode": "AGGRESSIVE"})
+        res_agg = client.post("/predict", json=card_testing_payload)
+        assert res_agg.status_code == 200
+        data_agg = res_agg.json()
+        assert data_agg["active_policy"] == "AGGRESSIVE"
+        assert data_agg["fraud_probability"] == 0.85
+        assert data_agg["is_fraud"] is True, "0.85 probability should flip to FLAGGED AS FRAUD under AGGRESSIVE policy"
 
     # Reset to STRICT
     client.patch("/policy", json={"policy_mode": "STRICT"})
