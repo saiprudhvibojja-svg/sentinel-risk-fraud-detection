@@ -291,6 +291,7 @@ class BatchSummary(BaseModel):
 class BatchPredictionResponse(BaseModel):
     summary: BatchSummary
     predictions: List[BatchItemPrediction]
+    drift_assessment: Optional[Dict[str, Any]] = None
 
 
 class PolicyPatchRequest(BaseModel):
@@ -412,6 +413,14 @@ def _run_batch_inference(df: pd.DataFrame) -> BatchPredictionResponse:
 
     flagged_rate = round(total_flagged / total_evaluated, 4) if total_evaluated > 0 else 0.0
 
+    drift_assessment = None
+    if total_evaluated >= 15:
+        try:
+            from src.drift import assess_batch_drift
+            drift_assessment = assess_batch_drift(df)
+        except Exception as e:
+            logger.warning(f"Batch drift assessment failed: {e}")
+
     return BatchPredictionResponse(
         summary=BatchSummary(
             total_evaluated=total_evaluated,
@@ -421,6 +430,7 @@ def _run_batch_inference(df: pd.DataFrame) -> BatchPredictionResponse:
             active_policy=active_policy,
         ),
         predictions=predictions,
+        drift_assessment=drift_assessment,
     )
 
 
@@ -812,4 +822,15 @@ def get_retrain_status():
             "message": retrain_state["message"],
             "best_pr_auc": retrain_state.get("best_pr_auc"),
         }
+
+
+# --- MLOps Drift Detection Telemetry Endpoint ---
+@app.get("/api/drift/status")
+def get_drift_status():
+    """
+    Returns the latest batch Population Stability Index (PSI) drift report,
+    evaluated features, baseline metadata, and retrain recommendation flag.
+    """
+    from src.drift import get_latest_drift_report
+    return get_latest_drift_report()
 

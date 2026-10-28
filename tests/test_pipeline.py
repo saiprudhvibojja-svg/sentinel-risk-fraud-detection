@@ -563,6 +563,56 @@ def test_retrain_endpoint_validation(client):
     assert res_invalid_timeout.status_code in [400, 422]
 
 
+# --- Test Group 7: Phase 5 MLOps Population Stability Index (PSI) & Drift Monitoring ---
+def test_psi_calculation_zero_drift():
+    from src.drift import calculate_psi
+    baseline = [0.10] * 10
+    actual = [0.10] * 10
+    psi = calculate_psi(baseline, actual)
+    assert abs(psi - 0.0) < 1e-4, f"Expected PSI ~ 0.0 for identical distributions, got {psi}"
+
+
+def test_psi_calculation_heavy_drift():
+    from src.drift import calculate_psi
+    baseline = [0.10] * 10
+    actual = [0.01] * 5 + [0.19] * 5
+    psi = calculate_psi(baseline, actual)
+    assert psi > 0.25, f"Expected PSI > 0.25 for heavily shifted distribution, got {psi}"
+
+
+def test_drift_endpoint(client):
+    res = client.get("/api/drift/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert "overall_status" in data
+    assert data["overall_status"] in ["STABLE", "WARNING", "DRIFT_DETECTED"]
+    assert "overall_psi" in data
+    assert "features" in data
+    assert "retrain_recommended" in data
+    assert isinstance(data["retrain_recommended"], bool)
+    for feat in ["V4", "V10", "V12", "V14", "V17", "Amount"]:
+        assert feat in data["features"], f"Feature {feat} missing from drift evaluation"
+        assert "psi" in data["features"][feat]
+        assert "status" in data["features"][feat]
+        assert "ks_statistic" in data["features"][feat]
+
+
+def test_predict_batch_drift_attachment(client):
+    records = []
+    for i in range(20):
+        t = {f"v{j}": 0.0 for j in range(1, 29)}
+        t["time_elapsed"] = 1000.0 + i
+        t["amount"] = 50.0 + i
+        records.append(t)
+    res = client.post("/predict-batch", json=records)
+    assert res.status_code == 200
+    data = res.json()
+    assert "drift_assessment" in data
+    assert data["drift_assessment"] is not None
+    assert "overall_status" in data["drift_assessment"]
+
+
+
 
 
 

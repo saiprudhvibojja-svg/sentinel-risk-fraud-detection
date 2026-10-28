@@ -541,7 +541,7 @@
       </div>
 
       <!-- Summary Metrics Cards -->
-      <div id="batchSummaryGrid" class="hidden grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div id="batchSummaryGrid" class="hidden grid grid-cols-1 sm:grid-cols-5 gap-4">
         <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800">
           <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Scanned</div>
           <div id="sumTotal" class="font-mono text-2xl font-bold text-white mt-1">0</div>
@@ -557,6 +557,18 @@
         <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800">
           <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Policy Cutoff</div>
           <div id="sumCutoff" class="font-mono text-2xl font-bold text-slate-300 mt-1">0.9668</div>
+        </div>
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800 flex flex-col justify-between cursor-pointer hover:border-slate-700 transition" onclick="openDriftDetailModal()">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Drift Health (PSI)</div>
+            <span class="text-[10px] text-blue-400 hover:underline">View Audit</span>
+          </div>
+          <div class="mt-2">
+            <span id="batchDriftBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="batchDriftText">🟢 Stable (PSI: 0.00)</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -610,6 +622,30 @@
 
     <!-- SECTION 3: MODEL ANALYTICS & RETRAINING STUDIO -->
     <section id="analyticsSection" class="hidden space-y-6">
+
+      <!-- Interactive Drift Alert Banner -->
+      <div id="analyticsDriftAlertBanner" class="hidden glass-panel rounded-2xl p-4 border border-rose-500/40 bg-rose-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-rose-500/20 text-rose-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm font-bold text-white flex items-center gap-2">
+              <span>Distribution Drift Detected</span>
+              <span id="driftAlertPsiBadge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500 text-white">PSI: --</span>
+            </div>
+            <p id="driftAlertText" class="text-xs text-rose-200 mt-0.5">Distribution shift detected in recent batches across monitored risk drivers. Click here to trigger retraining.</p>
+          </div>
+        </div>
+        <button onclick="scrollToRetrainStudio()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-md flex items-center gap-2 whitespace-nowrap cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>Trigger Retraining</span>
+        </button>
+      </div>
 
       <!-- Header Stats Row (5 Cards) -->
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -765,6 +801,48 @@
             <span>High precision prevents legitimate cardholder declines</span>
             <span>High recall intercepts maximum fraud attacks</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Feature Drift & Population Stability Section -->
+      <div id="driftTelemetrySection" class="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800 space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <span>Feature Drift & Population Stability (PSI)</span>
+                <span id="driftOverallStatusBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">🟢 POPULATION STABLE</span>
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Tracking decile divergence and Kolmogorov-Smirnov statistics against training baseline</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="fetchDriftStatus(true)" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span>Refresh Telemetry</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 Feature Cards Grid -->
+        <div id="driftFeatureCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-slate-400 gap-2 border-t border-slate-800/60">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Stable (&lt;0.10)</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Moderate (0.10 - 0.25)</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Severe (&ge;0.25)</span>
+          </div>
+          <div id="driftLastEvaluatedText" class="italic">Last evaluated: Engine baseline initialized</div>
         </div>
       </div>
 
@@ -930,6 +1008,83 @@
     </div>
   </div>
 
+  <!-- POPULATION STABILITY INDEX (PSI) DRIFT BREAKDOWN MODAL -->
+  <div id="driftDetailModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-2xl rounded-2xl p-6 shadow-2xl border border-slate-700 space-y-5 animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>Population Stability Index (PSI) Audit</span>
+              <span id="modalDriftOverallBadge" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">🟢 STABLE</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">10-decile baseline frequency shift analysis across critical fraud risk drivers</p>
+          </div>
+        </div>
+        <button onclick="closeDriftDetailModal()" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Overview Cards -->
+      <div class="grid grid-cols-3 gap-3 text-center text-xs">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-slate-400 text-[10px] uppercase font-semibold">Max Feature PSI</div>
+          <div id="modalMaxPsi" class="text-lg font-black font-mono text-white mt-0.5">0.000</div>
+          <div id="modalMaxFeature" class="text-[10px] text-slate-400 mt-0.5">--</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-slate-400 text-[10px] uppercase font-semibold">Mean Batch PSI</div>
+          <div id="modalMeanPsi" class="text-lg font-black font-mono text-blue-400 mt-0.5">0.000</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Decile divergence</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-slate-400 text-[10px] uppercase font-semibold">Batch Samples</div>
+          <div id="modalDriftBatchSize" class="text-lg font-black font-mono text-emerald-400 mt-0.5">0</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Evaluated records</div>
+        </div>
+      </div>
+
+      <!-- Feature Table -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Monitored Risk Features</h4>
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-800 text-[10px] uppercase">
+              <tr>
+                <th class="py-2.5 px-3">Feature</th>
+                <th class="py-2.5 px-3">PSI Score</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3">KS Stat</th>
+                <th class="py-2.5 px-3">Batch Mean</th>
+                <th class="py-2.5 px-3">Base Mean</th>
+              </tr>
+            </thead>
+            <tbody id="modalDriftTableBody" class="divide-y divide-slate-800/80 text-slate-300">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Interpretations Callout -->
+      <div id="modalDriftRecommendationCallout" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+        <div class="font-bold text-white text-[11px] mb-1">PSI Diagnostic Interpretation:</div>
+        <div id="modalDriftRecommendationText" class="text-slate-400 text-[11px]">All distributions align closely with reference training parameters.</div>
+      </div>
+
+      <div class="pt-2 flex justify-between items-center">
+        <div class="text-[10px] text-slate-500">
+          Standard thresholds: &lt;0.10 Stable | 0.10–0.25 Moderate | &ge;0.25 Severe
+        </div>
+        <button onclick="closeDriftDetailModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white cursor-pointer">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // --- Global State & Key Decoupling ---
     const DEFAULT_API_KEY = 'sentinel-dev-secret-key-2026';
@@ -1042,6 +1197,7 @@
       fetchPolicy();
       checkHealth();
       fetchModelAnalytics();
+      fetchDriftStatus();
       setInterval(checkHealth, 10000);
     });
 
@@ -1265,6 +1421,7 @@
         if (analyticsSec) analyticsSec.classList.remove('hidden');
         if (tabAnalyticsBtn) tabAnalyticsBtn.className = activeClasses;
         fetchModelAnalytics();
+        fetchDriftStatus();
       }
     }
 
@@ -1583,6 +1740,12 @@
       document.getElementById('sumFlagged').textContent = data.summary.total_flagged.toLocaleString();
       document.getElementById('sumRate').textContent = (data.summary.flagged_rate * 100).toFixed(2) + '%';
       document.getElementById('sumCutoff').textContent = data.summary.decision_threshold.toFixed(4);
+
+      if (data.drift_assessment) {
+        updateDriftBadge(data.drift_assessment);
+      } else {
+        fetchDriftStatus();
+      }
 
       document.getElementById('batchSummaryGrid').classList.remove('hidden');
       document.getElementById('batchResultsTableContainer').classList.remove('hidden');
@@ -1965,6 +2128,205 @@
         console.error('Polling error:', err);
       }
     }
+
+    // --- MLOps PSI Drift Telemetry Controller ---
+    let latestDriftData = null;
+
+    function openDriftDetailModal() {
+      const modal = document.getElementById('driftDetailModal');
+      if (!modal) return;
+      populateDriftModal(latestDriftData);
+      modal.classList.remove('hidden');
+    }
+
+    function closeDriftDetailModal() {
+      const modal = document.getElementById('driftDetailModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updateDriftBadge(drift) {
+      if (!drift) return;
+      latestDriftData = drift;
+      const badge = document.getElementById('batchDriftBadge');
+      const text = document.getElementById('batchDriftText');
+      if (!badge || !text) return;
+      const psiVal = (drift.overall_psi !== undefined ? drift.overall_psi : drift.max_psi) || 0.0;
+
+      if (drift.overall_status === 'DRIFT_DETECTED') {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30';
+        text.textContent = `🔴 Drift (PSI: ${psiVal.toFixed(3)})`;
+      } else if (drift.overall_status === 'WARNING') {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30';
+        text.textContent = `🟡 Warning (PSI: ${psiVal.toFixed(3)})`;
+      } else {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+        text.textContent = `🟢 Stable (PSI: ${psiVal.toFixed(3)})`;
+      }
+    }
+
+    async function fetchDriftStatus(forceRender = false) {
+      try {
+        const res = await fetch('/api/drift/status');
+        if (!res.ok) return;
+        const drift = await res.json();
+        latestDriftData = drift;
+        updateDriftBadge(drift);
+        renderDriftTelemetry(drift);
+      } catch (err) {
+        console.error('Failed to fetch drift status:', err);
+      }
+    }
+
+    function renderDriftTelemetry(drift) {
+      if (!drift) return;
+
+      // 1. Alert Banner in Retrain Tab
+      const alertBanner = document.getElementById('analyticsDriftAlertBanner');
+      const alertPsi = document.getElementById('driftAlertPsiBadge');
+      const alertText = document.getElementById('driftAlertText');
+      if (alertBanner) {
+        if (drift.retrain_recommended || drift.overall_status === 'DRIFT_DETECTED') {
+          alertBanner.classList.remove('hidden');
+          if (alertPsi) alertPsi.textContent = `PSI: ${(drift.max_psi || drift.overall_psi || 0).toFixed(3)}`;
+          if (alertText) alertText.textContent = drift.recommendation || `Severe distribution drift detected in '${drift.max_drifted_feature}'. Immediate retraining recommended.`;
+        } else {
+          alertBanner.classList.add('hidden');
+        }
+      }
+
+      // 2. Status Badge in Section
+      const secBadge = document.getElementById('driftOverallStatusBadge');
+      if (secBadge) {
+        if (drift.overall_status === 'DRIFT_DETECTED') {
+          secBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20';
+          secBadge.textContent = `🔴 DRIFT DETECTED (Max PSI: ${(drift.max_psi || 0).toFixed(3)})`;
+        } else if (drift.overall_status === 'WARNING') {
+          secBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20';
+          secBadge.textContent = `🟡 MODERATE DRIFT (Max PSI: ${(drift.max_psi || 0).toFixed(3)})`;
+        } else {
+          secBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+          secBadge.textContent = '🟢 POPULATION STABLE';
+        }
+      }
+
+      // 3. Last Evaluated Timestamp
+      const lastEvalElem = document.getElementById('driftLastEvaluatedText');
+      if (lastEvalElem && drift.timestamp) {
+        lastEvalElem.textContent = `Evaluated: ${new Date(drift.timestamp).toLocaleTimeString()} (Batch: ${drift.batch_size || 'Init Baseline'} rows)`;
+      }
+
+      // 4. Render 6 Feature Cards
+      const cardsGrid = document.getElementById('driftFeatureCardsGrid');
+      if (cardsGrid && drift.features) {
+        cardsGrid.innerHTML = '';
+        Object.keys(drift.features).forEach(featName => {
+          const feat = drift.features[featName];
+          const psi = Number(feat.psi || 0);
+          let colorClass = 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5';
+          let badgeText = 'Stable';
+          let progressColor = 'bg-emerald-400';
+
+          if (feat.status === 'DRIFT_DETECTED') {
+            colorClass = 'text-rose-400 border-rose-500/30 bg-rose-500/5';
+            badgeText = 'Severe';
+            progressColor = 'bg-rose-500';
+          } else if (feat.status === 'WARNING') {
+            colorClass = 'text-amber-400 border-amber-500/30 bg-amber-500/5';
+            badgeText = 'Moderate';
+            progressColor = 'bg-amber-400';
+          }
+
+          const card = document.createElement('div');
+          card.className = `p-3.5 rounded-xl border ${colorClass} flex flex-col justify-between space-y-2 cursor-pointer hover:scale-[1.02] transition`;
+          card.onclick = openDriftDetailModal;
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-xs text-white">${featName}</span>
+              <span class="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">${badgeText}</span>
+            </div>
+            <div>
+              <div class="text-lg font-black font-mono text-white">${psi.toFixed(3)}</div>
+              <div class="text-[10px] text-slate-400">PSI Index</div>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="${progressColor} h-1.5 rounded-full" style="width: ${Math.min(100, Math.max(10, psi * 200))}%"></div>
+            </div>
+            <div class="pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+              <span>KS: ${feat.ks_statistic !== undefined ? feat.ks_statistic.toFixed(2) : '--'}</span>
+              <span>&mu;: ${feat.batch_mean !== undefined ? feat.batch_mean.toFixed(2) : '--'}</span>
+            </div>
+          `;
+          cardsGrid.appendChild(card);
+        });
+      }
+    }
+
+    function populateDriftModal(drift) {
+      if (!drift) return;
+      const modalMaxPsi = document.getElementById('modalMaxPsi');
+      if (modalMaxPsi) modalMaxPsi.textContent = (drift.max_psi || 0).toFixed(4);
+
+      const modalMaxFeature = document.getElementById('modalMaxFeature');
+      if (modalMaxFeature) modalMaxFeature.textContent = drift.max_drifted_feature || 'None';
+
+      const modalMeanPsi = document.getElementById('modalMeanPsi');
+      if (modalMeanPsi) modalMeanPsi.textContent = (drift.mean_psi || 0).toFixed(4);
+
+      const modalBatchSize = document.getElementById('modalDriftBatchSize');
+      if (modalBatchSize) modalBatchSize.textContent = (drift.batch_size || 0).toLocaleString();
+
+      const badge = document.getElementById('modalDriftOverallBadge');
+      if (badge) {
+        if (drift.overall_status === 'DRIFT_DETECTED') {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20';
+          badge.textContent = '🔴 DRIFT DETECTED';
+        } else if (drift.overall_status === 'WARNING') {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20';
+          badge.textContent = '🟡 WARNING';
+        } else {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+          badge.textContent = '🟢 STABLE';
+        }
+      }
+
+      const recText = document.getElementById('modalDriftRecommendationText');
+      if (recText) recText.textContent = drift.recommendation || 'All input distributions match expected baseline parameters.';
+
+      const tbody = document.getElementById('modalDriftTableBody');
+      if (tbody && drift.features) {
+        tbody.innerHTML = '';
+        Object.keys(drift.features).forEach(fname => {
+          const feat = drift.features[fname];
+          let statusPill = `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-sans">Stable</span>`;
+          if (feat.status === 'DRIFT_DETECTED') {
+            statusPill = `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20 font-sans">Drift</span>`;
+          } else if (feat.status === 'WARNING') {
+            statusPill = `<span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-sans">Warning</span>`;
+          }
+
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-900/50 transition';
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 font-bold text-white">${fname}</td>
+            <td class="py-2.5 px-3 font-semibold text-white">${Number(feat.psi || 0).toFixed(4)}</td>
+            <td class="py-2.5 px-3">${statusPill}</td>
+            <td class="py-2.5 px-3 text-slate-400">${feat.ks_statistic !== undefined ? feat.ks_statistic.toFixed(4) : '--'}</td>
+            <td class="py-2.5 px-3 text-slate-300">${feat.batch_mean !== undefined ? feat.batch_mean.toFixed(2) : '--'}</td>
+            <td class="py-2.5 px-3 text-slate-400">${feat.baseline_mean !== undefined ? feat.baseline_mean.toFixed(2) : '--'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function scrollToRetrainStudio() {
+      switchTab('analytics');
+      const studio = document.getElementById('retrainTrialsSlider');
+      if (studio) {
+        studio.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   </script>
 </body>
 </html>
+

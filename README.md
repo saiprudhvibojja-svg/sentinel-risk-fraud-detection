@@ -1,9 +1,11 @@
 # SentinelRisk: Enterprise Fraud Detection & Explainable AI Console
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-2.0.0-009688.svg)](https://fastapi.tiangolo.com/)
-[![XGBoost](https://img.shields.io/badge/XGBoost-PR--AUC%200.8480-green.svg)](https://xgboost.ai/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)
+![PR-AUC](https://img.shields.io/badge/PR--AUC-0.8803-success.svg)
+![ROC-AUC](https://img.shields.io/badge/ROC--AUC-0.9801-brightgreen.svg)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blueviolet.svg)
 
 **SentinelRisk** is a hardened, production-grade credit card fraud detection system designed for real-time transactional risk assessment, sub-second latency, and explainable decision intelligence. Combining **Bayesian-optimized XGBoost**, **SMOTE rebalancing**, **SHAP TreeExplainer** feature attributions, and **dynamic policy controls**, SentinelRisk safeguards financial flows with enterprise security, rate limiting, and structured audit logs.
 
@@ -127,6 +129,28 @@ Organizations can dynamically update risk tolerance without restarting applicati
 | `GET` | `/api/model-analytics` | Public | None | Telemetry benchmarks, confusion matrix & PR curve points |
 | `POST` | `/api/retrain` | Optional | None | Trigger Optuna Bayesian hyperparameter search in background |
 | `GET` | `/api/retrain/status` | Public | None | Check real-time retraining progress and status |
+| `GET` | `/api/drift/status` | Public | None | Real-time decile PSI drift metrics, KS stats & retrain recommendation flag |
+
+---
+
+## 📈 Enterprise MLOps: Population Stability Index (PSI) Drift Detection
+
+In real-world financial fraud environments, cardholder purchasing patterns and fraud attack vectors continuously shift. SentinelRisk features an enterprise data drift detection engine that computes the **Population Stability Index (PSI)** and **Kolmogorov-Smirnov (KS)** divergence across key fraud drivers (`V4`, `V10`, `V12`, `V14`, `V17`, `Amount`) against the reference training population.
+
+### Decile Binning & Mathematical Formulation
+For each monitored feature, the training distribution is partitioned into 10 decile bins ($k = 10$). For any incoming transaction batch ($\ge 15$ transactions), empirical frequencies are binned into identical decile edges:
+
+$$PSI = \sum_{i=1}^{k} \left(Actual\%_i - Expected\%_i\right) \times \ln\left(\frac{Actual\%_i}{Expected\%_i}\right)$$
+
+### Decision Thresholds & Interpretation
+| PSI Value | Drift Severity | System Interpretation & Recommended Action |
+| :--- | :--- | :--- |
+| **$PSI < 0.10$** | **Negligible Drift** (🟢 Stable) | Population distribution aligns with baseline; model inferences are optimal. |
+| **$0.10 \le PSI < 0.25$** | **Moderate Drift** (🟡 Warning) | Moderate distribution divergence; monitor incoming batch streams closely. |
+| **$PSI \ge 0.25$** | **Significant Drift** (🔴 Severe) | Severe population shift detected; automated alert triggers model retraining recommendation. |
+
+Batch audit responses automatically attach `drift_assessment` objects, and the web console provides real-time drift telemetry badges, per-feature breakdown modals, and automated retraining callouts.
+
 
 ---
 
