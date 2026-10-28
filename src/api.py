@@ -790,6 +790,15 @@ def trigger_retraining(
     request: RetrainRequest = RetrainRequest(),
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ):
+    # Guard against dataset absence in cloud container deployments
+    db_file = Path("data/creditcard.db")
+    csv_file = Path("data/creditcard.csv")
+    if not db_file.exists() and not csv_file.exists():
+        raise HTTPException(
+            status_code=400,
+            detail="Cloud environment detected: Dataset is omitted from deployment image. Use GitHub Actions Cloud CI/CD to train."
+        )
+
     global retrain_state
     with retrain_lock:
         if retrain_state["status"] == "training":

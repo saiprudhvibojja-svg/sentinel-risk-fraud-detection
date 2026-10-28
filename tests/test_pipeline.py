@@ -612,6 +612,22 @@ def test_predict_batch_drift_attachment(client):
     assert "overall_status" in data["drift_assessment"]
 
 
+def test_retrain_cloud_dataset_omission(client, monkeypatch):
+    from pathlib import Path
+    # Simulate cloud container environment where datasets are omitted
+    orig_exists = Path.exists
+    def mock_exists(self):
+        if "creditcard.db" in str(self) or "creditcard.csv" in str(self):
+            return False
+        return orig_exists(self)
+
+    monkeypatch.setattr(Path, "exists", mock_exists)
+    res = client.post("/api/retrain", json={"n_trials": 2, "timeout": 30})
+    assert res.status_code == 400
+    assert "Cloud environment detected" in res.json().get("detail", "")
+
+
+
 
 
 
