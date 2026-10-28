@@ -221,6 +221,10 @@ def run_optuna_pipeline(
         "champion_hyperparameters": champion_params,
         "optuna_best_value": study.best_value,
         "total_trials_evaluated": len(study.trials),
+        "pr_curve_samples": [
+            {"recall": round(float(recalls[i]), 4), "precision": round(float(precisions[i]), 4)}
+            for i in range(0, len(recalls), max(1, len(recalls) // 50))
+        ] + [{"recall": round(float(recalls[-1]), 4), "precision": round(float(precisions[-1]), 4)}],
     }
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics_data, f, indent=4)

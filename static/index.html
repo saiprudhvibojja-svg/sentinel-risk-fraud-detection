@@ -145,6 +145,12 @@
         </svg>
         Batch CSV Auditor
       </button>
+      <button id="tabAnalyticsBtn" onclick="switchTab('analytics')" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+        Model Analytics & Retraining
+      </button>
     </div>
 
     <!-- SECTION 1: SINGLE TRANSACTION SIMULATOR & EXPLAINER & TELEMETRY (3-COLUMN LAYOUT) -->
@@ -599,6 +605,246 @@
       </div>
     </section>
 
+    <!-- SECTION 3: MODEL ANALYTICS & RETRAINING STUDIO -->
+    <section id="analyticsSection" class="hidden space-y-6">
+
+      <!-- Header Stats Row (5 Cards) -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <!-- PR-AUC -->
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>PR-AUC</span>
+            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+          </div>
+          <div class="mt-3">
+            <div id="statPrAuc" class="text-2xl font-black text-white font-mono tracking-tight">--</div>
+            <div class="text-[10px] text-blue-400 mt-0.5">Primary Target (Imbalance)</div>
+          </div>
+        </div>
+
+        <!-- ROC-AUC -->
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>ROC-AUC</span>
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+          </div>
+          <div class="mt-3">
+            <div id="statRocAuc" class="text-2xl font-black text-white font-mono tracking-tight">--</div>
+            <div class="text-[10px] text-indigo-400 mt-0.5">Discrimination Ability</div>
+          </div>
+        </div>
+
+        <!-- Precision -->
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>Precision</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <div class="mt-3">
+            <div id="statPrecision" class="text-2xl font-black text-white font-mono tracking-tight">--</div>
+            <div class="text-[10px] text-emerald-400 mt-0.5">True Fraud Fidelity</div>
+          </div>
+        </div>
+
+        <!-- Recall -->
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>Recall</span>
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          </div>
+          <div class="mt-3">
+            <div id="statRecall" class="text-2xl font-black text-white font-mono tracking-tight">--</div>
+            <div class="text-[10px] text-amber-400 mt-0.5">Fraud Catch Coverage</div>
+          </div>
+        </div>
+
+        <!-- Optimal F1 -->
+        <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-800 flex flex-col justify-between col-span-2 md:col-span-1">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>Optimal F1</span>
+            <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+          </div>
+          <div class="mt-3">
+            <div id="statF1" class="text-2xl font-black text-white font-mono tracking-tight">--</div>
+            <div class="text-[10px] text-purple-400 mt-0.5">Harmonic Mean Metric</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Visual Grid: Confusion Matrix (Left) & Precision-Recall Curve (Right) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        
+        <!-- Left: Interactive Visual Confusion Matrix (5 cols) -->
+        <div class="lg:col-span-5 glass-panel rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <span>Test-Set Confusion Matrix</span>
+                </h3>
+                <p class="text-[11px] text-slate-400 mt-0.5">Stratified held-out test cohort classification distribution</p>
+              </div>
+              <span id="cmThresholdBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">Cutoff: <span id="cmThreshold">--</span></span>
+            </div>
+
+            <!-- Matrix 2x2 Grid -->
+            <div class="mt-4 grid grid-cols-2 gap-3 text-center">
+              <!-- True Negative (TN) -->
+              <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
+                <div class="text-[10px] font-semibold tracking-wider uppercase text-emerald-400">True Negatives (TN)</div>
+                <div id="cmTN" class="text-2xl font-black text-white font-mono mt-1">--</div>
+                <div class="text-[11px] text-emerald-300 font-semibold mt-0.5">Legit Classified Legit</div>
+                <div id="cmTNSub" class="text-[10px] text-slate-400 mt-1">--% of pool</div>
+              </div>
+
+              <!-- False Positive (FP) -->
+              <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-colors">
+                <div class="text-[10px] font-semibold tracking-wider uppercase text-amber-400">False Positives (FP)</div>
+                <div id="cmFP" class="text-2xl font-black text-amber-400 font-mono mt-1">--</div>
+                <div class="text-[11px] text-amber-300 font-semibold mt-0.5">False Alarm (Type I)</div>
+                <div id="cmFPSub" class="text-[10px] text-slate-400 mt-1">--% false alarm</div>
+              </div>
+
+              <!-- False Negative (FN) -->
+              <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 hover:border-rose-500/40 transition-colors">
+                <div class="text-[10px] font-semibold tracking-wider uppercase text-rose-400">False Negatives (FN)</div>
+                <div id="cmFN" class="text-2xl font-black text-rose-400 font-mono mt-1">--</div>
+                <div class="text-[11px] text-rose-300 font-semibold mt-0.5">Missed Fraud (Type II)</div>
+                <div id="cmFNSub" class="text-[10px] text-slate-400 mt-1">--% missed</div>
+              </div>
+
+              <!-- True Positive (TP) -->
+              <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+                <div class="text-[10px] font-semibold tracking-wider uppercase text-blue-400">True Positives (TP)</div>
+                <div id="cmTP" class="text-2xl font-black text-white font-mono mt-1">--</div>
+                <div class="text-[11px] text-blue-300 font-semibold mt-0.5">Fraud Intercepted</div>
+                <div id="cmTPSub" class="text-[10px] text-slate-400 mt-1">--% captured</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Summary Pill -->
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>Total Evaluated: <span id="cmTotalSamples" class="font-mono text-white font-semibold">--</span></div>
+            <div>Accuracy: <span id="cmAccuracy" class="font-mono text-emerald-400 font-bold">--</span></div>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Precision-Recall Curve (7 cols) -->
+        <div class="lg:col-span-7 glass-panel rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                </svg>
+                <span>Precision-Recall Curve (PR-AUC)</span>
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Trade-off trajectory across all decision thresholds with optimal cutoff</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
+                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                Optimal Cutoff
+              </span>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="w-full h-72 relative">
+            <canvas id="analyticsPrCanvas"></canvas>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+            <span>High precision prevents legitimate cardholder declines</span>
+            <span>High recall intercepts maximum fraud attacks</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Section: Retraining & Optimization Studio -->
+      <div class="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800 space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <span>Model Retraining & Optuna Bayesian Studio</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">Zero-Downtime Hot Reload</span>
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Tune hyperparameters and train champion model directly from the console</p>
+            </div>
+          </div>
+
+          <!-- Cloud Pipeline Link -->
+          <a href="https://github.com/saiprudhvibojja-svg/sentinel-risk-fraud-detection/actions" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white flex items-center gap-2 transition-all shadow-sm">
+            <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <span>GitHub Actions Cloud CI/CD</span>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Controls Row -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+          
+          <!-- Slider: Number of Optuna Trials (5 cols) -->
+          <div class="md:col-span-5 space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="retrainTrialsSlider" class="text-xs font-semibold text-slate-300">Optuna Optimization Trials</label>
+              <span id="trialsValueDisplay" class="font-mono text-sm font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">5 trials</span>
+            </div>
+            <input type="range" id="retrainTrialsSlider" min="2" max="30" value="5" step="1" oninput="document.getElementById('trialsValueDisplay').textContent = `${this.value} trials`" class="w-full accent-blue-500 bg-slate-800 rounded-lg h-2 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+              <span>2 (Fast Test)</span>
+              <span>15 (Balanced)</span>
+              <span>30 (Deep Search)</span>
+            </div>
+          </div>
+
+          <!-- Input: Timeout seconds (3 cols) -->
+          <div class="md:col-span-3 space-y-2">
+            <label for="retrainTimeoutInput" class="text-xs font-semibold text-slate-300">Timeout Cap (seconds)</label>
+            <input type="number" id="retrainTimeoutInput" min="20" max="900" value="120" step="10" class="glass-input w-full px-3 py-2 rounded-xl text-xs font-mono text-white">
+          </div>
+
+          <!-- Trigger Button (4 cols) -->
+          <div class="md:col-span-4">
+            <button type="button" id="startRetrainBtn" onclick="triggerLocalRetraining()" class="w-full py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>Trigger Local Retraining</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Bar Container (Hidden by default) -->
+        <div id="retrainProgressContainer" class="hidden space-y-2 pt-2 border-t border-slate-800">
+          <div class="flex items-center justify-between text-xs">
+            <span id="retrainStatusText" class="text-slate-300 font-medium">Running Optuna Bayesian training...</span>
+            <span class="inline-block animate-spin w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full"></span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div id="retrainProgressBar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 10%"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
   </div>
 
   <!-- SLIDE-OVER EXPLAINABILITY MODAL / DRAWER -->
@@ -647,6 +893,8 @@
     const API_KEY = 'sentinel-dev-secret-key-2026';
     let riskGaugeChart = null;
     let shapBarChart = null;
+    let analyticsPrChart = null;
+    let retrainInterval = null;
     let batchData = [];
     let filteredBatchData = [];
     let currentPage = 1;
@@ -703,6 +951,7 @@
       loadPreset('legit');
       fetchPolicy();
       checkHealth();
+      fetchModelAnalytics();
       setInterval(checkHealth, 10000);
     });
 
@@ -900,19 +1149,32 @@
     function switchTab(tab) {
       const simSec = document.getElementById('simulatorSection');
       const batchSec = document.getElementById('batchSection');
+      const analyticsSec = document.getElementById('analyticsSection');
       const tabSimBtn = document.getElementById('tabSimBtn');
       const tabBatchBtn = document.getElementById('tabBatchBtn');
+      const tabAnalyticsBtn = document.getElementById('tabAnalyticsBtn');
+
+      const activeClasses = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2';
+      const inactiveClasses = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 flex items-center gap-2';
+
+      simSec.classList.add('hidden');
+      batchSec.classList.add('hidden');
+      if (analyticsSec) analyticsSec.classList.add('hidden');
+
+      tabSimBtn.className = inactiveClasses;
+      tabBatchBtn.className = inactiveClasses;
+      if (tabAnalyticsBtn) tabAnalyticsBtn.className = inactiveClasses;
 
       if (tab === 'simulator') {
         simSec.classList.remove('hidden');
-        batchSec.classList.add('hidden');
-        tabSimBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2';
-        tabBatchBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 flex items-center gap-2';
-      } else {
-        simSec.classList.add('hidden');
+        tabSimBtn.className = activeClasses;
+      } else if (tab === 'batch') {
         batchSec.classList.remove('hidden');
-        tabBatchBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2';
-        tabSimBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 flex items-center gap-2';
+        tabBatchBtn.className = activeClasses;
+      } else if (tab === 'analytics') {
+        if (analyticsSec) analyticsSec.classList.remove('hidden');
+        if (tabAnalyticsBtn) tabAnalyticsBtn.className = activeClasses;
+        fetchModelAnalytics();
       }
     }
 
@@ -1393,6 +1655,225 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    }
+
+    // --- Tab 3: Model Analytics & Retraining Studio Controller ---
+    async function fetchModelAnalytics() {
+      try {
+        const res = await fetch('/api/model-analytics', {
+          headers: { 'X-API-Key': API_KEY }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderAnalytics(data);
+      } catch (err) {
+        console.error('Failed to load model analytics:', err);
+      }
+    }
+
+    function renderAnalytics(data) {
+      // 1. Top KPI Stat Cards
+      const prElem = document.getElementById('statPrAuc');
+      if (prElem) prElem.textContent = Number(data.pr_auc).toFixed(4);
+
+      const rocElem = document.getElementById('statRocAuc');
+      if (rocElem) rocElem.textContent = Number(data.roc_auc).toFixed(4);
+
+      const precElem = document.getElementById('statPrecision');
+      if (precElem) precElem.textContent = (Number(data.precision) * 100).toFixed(2) + '%';
+
+      const recElem = document.getElementById('statRecall');
+      if (recElem) recElem.textContent = (Number(data.recall) * 100).toFixed(2) + '%';
+
+      const f1Elem = document.getElementById('statF1');
+      if (f1Elem) f1Elem.textContent = Number(data.f1_score).toFixed(4);
+
+      // 2. Confusion Matrix Grid
+      const cm = data.confusion_matrix || {};
+      const tn = cm.true_negatives || 0;
+      const fp = cm.false_positives || 0;
+      const fn = cm.false_negatives || 0;
+      const tp = cm.true_positives || 0;
+      const total = tn + fp + fn + tp || 1;
+
+      const tnElem = document.getElementById('cmTN');
+      if (tnElem) tnElem.textContent = tn.toLocaleString();
+      const tnSub = document.getElementById('cmTNSub');
+      if (tnSub) tnSub.textContent = `${((tn / total) * 100).toFixed(2)}% of test pool`;
+
+      const fpElem = document.getElementById('cmFP');
+      if (fpElem) fpElem.textContent = fp.toLocaleString();
+      const fpSub = document.getElementById('cmFPSub');
+      if (fpSub) fpSub.textContent = `${((fp / (tn + fp || 1)) * 100).toFixed(3)}% false alarm rate`;
+
+      const fnElem = document.getElementById('cmFN');
+      if (fnElem) fnElem.textContent = fn.toLocaleString();
+      const fnSub = document.getElementById('cmFNSub');
+      if (fnSub) fnSub.textContent = `${((fn / (fn + tp || 1)) * 100).toFixed(2)}% missed frauds`;
+
+      const tpElem = document.getElementById('cmTP');
+      if (tpElem) tpElem.textContent = tp.toLocaleString();
+      const tpSub = document.getElementById('cmTPSub');
+      if (tpSub) tpSub.textContent = `${((tp / (fn + tp || 1)) * 100).toFixed(2)}% caught frauds`;
+
+      const totalSamplesElem = document.getElementById('cmTotalSamples');
+      if (totalSamplesElem) totalSamplesElem.textContent = `${total.toLocaleString()} transactions`;
+
+      const accElem = document.getElementById('cmAccuracy');
+      if (accElem) accElem.textContent = `${((data.accuracy || (tn + tp) / total) * 100).toFixed(3)}%`;
+
+      const thElem = document.getElementById('cmThreshold');
+      if (thElem) thElem.textContent = Number(data.optimal_threshold).toFixed(4);
+
+      // 3. Precision-Recall Curve Canvas Rendering
+      renderPrCurveChart(data.pr_curve_samples || [], data.optimal_threshold, data.precision, data.recall);
+    }
+
+    function renderPrCurveChart(samples, optThreshold, optPrecision, optRecall) {
+      const canvas = document.getElementById('analyticsPrCanvas');
+      if (!canvas) return;
+
+      const points = samples.map(s => ({ x: s.recall, y: s.precision }));
+
+      if (analyticsPrChart) {
+        analyticsPrChart.destroy();
+      }
+
+      const ctx = canvas.getContext('2d');
+      analyticsPrChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [
+            {
+              label: 'Precision-Recall Curve',
+              data: points,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              fill: true,
+              tension: 0.25,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              borderWidth: 2.5
+            },
+            {
+              label: `Champion Cutoff (${Number(optThreshold).toFixed(3)})`,
+              data: [{ x: Number(optRecall), y: Number(optPrecision) }],
+              borderColor: '#ef4444',
+              backgroundColor: '#ef4444',
+              pointRadius: 7,
+              pointHoverRadius: 9,
+              showLine: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              type: 'linear',
+              min: 0,
+              max: 1.0,
+              title: { display: true, text: 'Recall (Fraud Coverage)', color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } },
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }
+            },
+            y: {
+              min: 0,
+              max: 1.05,
+              title: { display: true, text: 'Precision (Classification Fidelity)', color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } },
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return `Recall: ${ctx.parsed.x.toFixed(4)}, Precision: ${ctx.parsed.y.toFixed(4)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    async function triggerLocalRetraining() {
+      const trials = parseInt(document.getElementById('retrainTrialsSlider').value) || 5;
+      const timeout = parseInt(document.getElementById('retrainTimeoutInput').value) || 120;
+      const btn = document.getElementById('startRetrainBtn');
+      const progressContainer = document.getElementById('retrainProgressContainer');
+      const progressBar = document.getElementById('retrainProgressBar');
+      const statusText = document.getElementById('retrainStatusText');
+
+      btn.disabled = true;
+      btn.className = 'w-full py-3 px-6 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-50 flex items-center justify-center gap-2';
+      progressContainer.classList.remove('hidden');
+      progressBar.style.width = '5%';
+      statusText.textContent = `Dispatching Optuna Bayesian job with ${trials} trials...`;
+
+      try {
+        const res = await fetch('/api/retrain', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify({ n_trials: trials, timeout: timeout })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Failed to dispatch retraining job');
+        }
+
+        if (retrainInterval) clearInterval(retrainInterval);
+        retrainInterval = setInterval(pollRetrainStatus, 2000);
+      } catch (err) {
+        alert(`Retraining error: ${err.message}`);
+        btn.disabled = false;
+        btn.className = 'w-full py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer';
+        progressContainer.classList.add('hidden');
+      }
+    }
+
+    async function pollRetrainStatus() {
+      try {
+        const res = await fetch('/api/retrain/status');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const progressBar = document.getElementById('retrainProgressBar');
+        const statusText = document.getElementById('retrainStatusText');
+        const btn = document.getElementById('startRetrainBtn');
+        const progressContainer = document.getElementById('retrainProgressContainer');
+
+        progressBar.style.width = `${data.progress || 10}%`;
+        statusText.textContent = data.message || `Status: ${data.status}`;
+
+        if (data.status === 'completed') {
+          clearInterval(retrainInterval);
+          retrainInterval = null;
+          progressBar.style.width = '100%';
+          btn.disabled = false;
+          btn.className = 'w-full py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer';
+          fetchModelAnalytics();
+          checkHealth();
+          fetchPolicy();
+        } else if (data.status === 'failed') {
+          clearInterval(retrainInterval);
+          retrainInterval = null;
+          btn.disabled = false;
+          btn.className = 'w-full py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer';
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
     }
   </script>
 </body>

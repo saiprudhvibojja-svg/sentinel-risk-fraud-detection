@@ -505,5 +505,64 @@ def test_structured_audit_log_generation(client, sample_payload):
     assert last_record["verdict"] in ["APPROVED", "FLAGGED_AS_FRAUD"]
 
 
+# --- Test Group 7: Tab 3 Model Analytics & Retraining Studio ---
+def test_model_analytics_endpoint(client):
+    res = client.get("/api/model-analytics")
+    assert res.status_code == 200
+    data = res.json()
+
+    # Core performance metrics
+    assert "pr_auc" in data
+    assert "roc_auc" in data
+    assert "accuracy" in data
+    assert "precision" in data
+    assert "recall" in data
+    assert "f1_score" in data
+    assert "optimal_threshold" in data
+    assert 0.0 < data["pr_auc"] <= 1.0
+    assert 0.0 < data["roc_auc"] <= 1.0
+
+    # Confusion matrix
+    assert "confusion_matrix" in data
+    cm = data["confusion_matrix"]
+    assert "true_negatives" in cm
+    assert "false_positives" in cm
+    assert "false_negatives" in cm
+    assert "true_positives" in cm
+    assert cm["true_negatives"] > 0
+    assert cm["true_positives"] > 0
+
+    # Sampled Precision-Recall coordinates for plotting
+    assert "pr_curve_samples" in data
+    assert isinstance(data["pr_curve_samples"], list)
+    assert len(data["pr_curve_samples"]) > 0
+    sample_pt = data["pr_curve_samples"][0]
+    assert "recall" in sample_pt
+    assert "precision" in sample_pt
+
+
+def test_retrain_status_endpoint(client):
+    res = client.get("/api/retrain/status")
+    assert res.status_code == 200
+    data = res.json()
+
+    assert "status" in data
+    assert data["status"] in ["idle", "training", "completed", "failed"]
+    assert "progress" in data
+    assert 0 <= data["progress"] <= 100
+    assert "message" in data
+
+
+def test_retrain_endpoint_validation(client):
+    # Test boundary limits on n_trials
+    res_invalid_trials = client.post("/api/retrain", json={"n_trials": 0})
+    assert res_invalid_trials.status_code in [400, 422]
+
+    # Test boundary limits on timeout
+    res_invalid_timeout = client.post("/api/retrain", json={"timeout": 5})
+    assert res_invalid_timeout.status_code in [400, 422]
+
+
+
 
 
