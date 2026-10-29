@@ -1,13 +1,52 @@
 # SentinelRisk: Enterprise Fraud Detection & Explainable AI Console
 
+[![Cloud CI/CD](https://github.com/saiprudhvibojja-svg/sentinel-risk-fraud-detection/actions/workflows/train_model.yml/badge.svg)](https://github.com/saiprudhvibojja-svg/sentinel-risk-fraud-detection/actions)
+[![Live Demo](https://img.shields.io/badge/Demo-Render%20Live-brightgreen?style=flat&logo=render)](https://sentinel-risk-fraud-detection.onrender.com)
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)
 ![PR-AUC](https://img.shields.io/badge/PR--AUC-0.8803-success.svg)
 ![ROC-AUC](https://img.shields.io/badge/ROC--AUC-0.9801-brightgreen.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blueviolet.svg)
+
+> 🌐 **Live Web Application:** [https://sentinel-risk-fraud-detection.onrender.com](https://sentinel-risk-fraud-detection.onrender.com)
 
 **SentinelRisk** is a hardened, production-grade credit card fraud detection system designed for real-time transactional risk assessment, sub-second latency, and explainable decision intelligence. Combining **Bayesian-optimized XGBoost**, **SMOTE rebalancing**, **SHAP TreeExplainer** feature attributions, and **dynamic policy controls**, SentinelRisk safeguards financial flows with enterprise security, rate limiting, and structured audit logs.
+
+---
+
+## 🕹️ Live Console Quick-Start Guide
+
+Experience the end-to-end decision intelligence platform directly in your browser without local installation via the [Live Render Demo](https://sentinel-risk-fraud-detection.onrender.com):
+
+### 1. Tab 1 — Real-Time Inference & SHAP (Transaction Simulator)
+- **Test Quick Presets:** Switch between pre-configured transaction archetypes to observe real-time inference:
+  - **Legitimate Retail:** Everyday store purchase (\$42.75) with benign behavioral vectors yielding low baseline fraud probability (~0.0%).
+  - **Card-Testing:** Rapid micro-authorization (\$1.00) exhibiting typical automated validation attack characteristics.
+  - **High-Risk Fraud:** Anomaly vector derived from confirmed test fraud attacks exhibiting extreme risk probability (> 99.0%).
+- **Evaluate Dynamic Risk Policies:** Toggle policies (`STRICT: 0.9668`, `BALANCED: 0.8500`, `AGGRESSIVE: 0.7000`, or `CUSTOM`) to see the instant impact on authorization verdicts (`APPROVED` vs `FLAGGED AS FRAUD`).
+- **Interpret SHAP Waterfall Attributions:**
+  - 🔴 **Red Bars:** Features pushing risk **higher** toward fraudulent classification.
+  - 🟢 **Green Bars:** Features acting as **mitigating factors** defending the transaction.
+  - Inspect baseline expected value $E[f(X)]$, transaction prediction $f(x)$, and top feature-level contributions for regulatory compliance (FCRA, GDPR).
+
+### 2. Tab 2 — Batch CSV Auditor & PSI Drift Scoring
+- **Load Sample or Upload Batches:**
+  - Click **"Load Sample CSV Batch"** to instantly stream 30+ randomized transactions from the database, or download the pre-formatted CSV template to upload custom transaction feeds.
+- **Audit Transactions with Explainability:** Inspect batch results with risk probability meters, decision tags, and latency statistics in a paginated, searchable table.
+- **Population Stability Index (PSI) Drift Scoring:**
+  - Automatically assesses incoming transaction distributions against reference training data across key fraud drivers (`V4`, `V10`, `V12`, `V14`, `V17`, `Amount`).
+  - View real-time drift telemetry badges: 🟢 **Stable** ($PSI < 0.10$), 🟡 **Moderate Warning** ($0.10 \le PSI < 0.25$), or 🔴 **Severe Drift** ($PSI \ge 0.25$).
+- **Inspect & Export:** Click any row to examine individual SHAP feature drivers, or click **"Export Audited CSV"** to download the batch with appended risk scores and top risk drivers.
+
+### 3. Tab 3 — Model Analytics & Retraining Studio
+- **Inspect 2x2 Confusion Matrix:** Review full test-set diagnostic performance across 56,864 transactions:
+  - **True Negatives:** 56,857 benign transactions correctly cleared.
+  - **False Positives:** 7 benign transactions flagged (ultra-low 0.012% false alarm rate).
+  - **False Negatives:** 22 missed fraud occurrences.
+  - **True Positives:** 76 fraud attacks successfully intercepted (77.55% recall).
+- **Precision-Recall (PR) Curve Analysis:** Examine the interactive PR curve visualizing trade-offs across cutoffs, with clear markers for the F1-optimal threshold (0.9668).
+- **Monitor Population Stability:** View system-wide drift indicators and retrain recommendation alerts.
+- **Asynchronous Cloud/Local Retraining:** Trigger background Bayesian Optuna hyperparameter optimization directly from the console with live status polling and telemetry.
 
 ---
 
